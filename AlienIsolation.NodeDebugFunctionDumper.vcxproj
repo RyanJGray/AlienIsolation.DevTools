@@ -156,10 +156,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="SigScanner.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="SigScanner.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
