@@ -211,6 +211,7 @@ void Menu::DrawMenu() {
         	static char levelName[128] = "";
             static std::string levelPrefix = "Production\\";
             std::string levelToLoad;
+            static bool invalidLevelError = false;
             ImGui::InputTextWithHint("Level name", "e.g. TECH_RnD_HzdLab", levelName, IM_ARRAYSIZE(levelName));
         	
             if (ImGui::Button("Load to provided level"))
@@ -222,9 +223,22 @@ void Menu::DrawMenu() {
                 const int ret = CATHODE::Scaleform::UI::LoadLevel(CATHODE::Scaleform::UI::loadLevelThisPtr, const_cast<char*>(levelToLoad.c_str()));
                 printf_s("[DevTools::Menu] LoadLevel ret = %d\n", ret);
 
-                CATHODE::Scaleform::UI::LoadLevelUnknownFunc3(CATHODE::Scaleform::UI::loadLevelThisPtr, ret);
-                CATHODE::Scaleform::UI::HandleLoadRequest(CATHODE::Scaleform::UI::loadLevelThisPtr, const_cast<char*>("\0"));
+                if (ret == 0)
+                {
+                    invalidLevelError = true;
+                }
+            	else
+            	{
+                    invalidLevelError = false;
+                    CATHODE::Scaleform::UI::LoadLevelUnknownFunc3(CATHODE::Scaleform::UI::loadLevelThisPtr, ret);
+                    CATHODE::Scaleform::UI::HandleLoadRequest(CATHODE::Scaleform::UI::loadLevelThisPtr, const_cast<char*>("\0"));
+                }
             }
+
+        	if (invalidLevelError)
+        	{
+                ImGui::TextColored(ImVec4(238, 238, 0, 1), "WARNING: Request blocked - Level not recognised by the engine!");
+        	}
 
             ImGui::End();
         }
