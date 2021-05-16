@@ -1,16 +1,5 @@
-// dllmain.cpp : Defines the entry point for the DLL application.
-#include <Windows.h>
-#include <cstdio>
-#include <fstream>
-#include <detours.h>
-#include <d3d11.h>
-
-#include "Scaleform.h"
 #include "Menu.h"
-
-#if defined _M_IX86
-#pragma comment(lib, "detours.lib")
-#endif
+#include "Scaleform.h"
 
 // Appears to get called for every ActionScript function call from the engine to Scaleform.
 // Attempting to even initialise variables inside the hooked function crashes the game with access violations, I tried changing the

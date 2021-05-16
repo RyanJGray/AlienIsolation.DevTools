@@ -1,6 +1,5 @@
+#include "Menu.h"
 #include "Scaleform.h"
-
-#include <cstdio>
 
 using namespace CATHODE::Scaleform;
 
