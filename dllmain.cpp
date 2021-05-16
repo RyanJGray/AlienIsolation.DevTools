@@ -1,96 +1,137 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include <Windows.h>
 #include <cstdio>
+#include <fstream>
 #include <detours.h>
+#include <d3d11.h>
+
+#include "Scaleform.h"
+#include "Menu.h"
 
 #if defined _M_IX86
 #pragma comment(lib, "detours.lib")
 #endif
 
-// Memory protection flags to check the executable address.
-#define PAGE_EXECUTE_FLAGS \
-    (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)
+// Appears to get called for every ActionScript function call from the engine to Scaleform.
+// Attempting to even initialise variables inside the hooked function crashes the game with access violations, I tried changing the
+// calling convention but it didn't help, and only made it worse.
+// I'll have to look at this later but for now it is being left alone.
+typedef void(__stdcall* tScaleform_UI_CallASFunction)(int**, char*, char*);
+tScaleform_UI_CallASFunction Scaleform_UI_CallASFunction = reinterpret_cast<tScaleform_UI_CallASFunction>(0x0081b060);
+
+typedef HRESULT(WINAPI* tD3D11CreateDeviceAndSwapChain)(
+    void* pAdapter,
+    D3D_DRIVER_TYPE      DriverType,
+    HMODULE              Software,
+    UINT                 Flags,
+    const void* pFeatureLevels,
+    UINT                 FeatureLevels,
+    UINT                 SDKVersion,
+    const DXGI_SWAP_CHAIN_DESC* pSwapChainDesc,
+    IDXGISwapChain** ppSwapChain,
+    ID3D11Device** ppDevice,
+    void* pFeatureLevel,
+    ID3D11DeviceContext** ppImmediateContext
+);
+
+// Menu - D3D11 CreateDeviceAndSwapChain hook.
+tD3D11CreateDeviceAndSwapChain d3d11CreateDeviceAndSwapChain = nullptr;
+
+typedef HRESULT(WINAPI* tD3D11Present)(
+    IDXGISwapChain* swapChain,
+    UINT            SyncInterval,
+    UINT            Flags
+);
+
+// Menu - D3D11 Present hook.
+tD3D11Present d3d11Present = nullptr;
 
 
-typedef char(__stdcall* tNodeDebugMessage)(char);
-tNodeDebugMessage NodeDebugMessage = (tNodeDebugMessage)0x00e1bcc0;
-
-BOOL bNodeDebugMessages = FALSE;
-//DWORD NodeDebugMessage = 0x6CBF23AC;
-//DWORD NodeDebugMessage = 0x00e1bcc0;
-DWORD oldProtect;
-
-
-// Detour function which overrides NodeDebugMessage.
 __declspec(noinline)
-char* __stdcall hNodeDebugMessage(char* param_1)
+void __stdcall hScaleform_UI_CallASFunction(int** thisPtr, char* actionScriptFunction, char* actionScriptParameter)
 {
-    // Calls to this function happen probably thousands of times per frame, and hit the FPS a lot, the debug prints are set to off by default.
-    if (GetKeyState(VK_MENU) & 0x8000)
+    printf_s("[Scaleform::UI::CallASFunction] thisPtr: 0x%p; actionScriptFunction: %s; actionScriptParameter: %s\n", thisPtr, actionScriptFunction, actionScriptParameter);
+
+    Scaleform_UI_CallASFunction(thisPtr, actionScriptFunction, actionScriptParameter);
+}
+
+HRESULT WINAPI hD3D11Present(
+    IDXGISwapChain* swapChain,
+    UINT        SyncInterval,
+    UINT        Flags
+) {
+    Menu::DrawMenu();
+
+    return d3d11Present(swapChain, SyncInterval, Flags);
+}
+
+HRESULT WINAPI hD3D11CreateDeviceAndSwapChain(
+    void* pAdapter,
+    D3D_DRIVER_TYPE      DriverType,
+    HMODULE              Software,
+    UINT                 Flags,
+    const void* pFeatureLevels,
+    UINT                 FeatureLevels,
+    UINT                 SDKVersion,
+    const DXGI_SWAP_CHAIN_DESC* pSwapChainDesc,
+    IDXGISwapChain** ppSwapChain,
+    ID3D11Device** ppDevice,
+    void* pFeatureLevel,
+    ID3D11DeviceContext** ppImmediateContext
+) {
+    HRESULT res = d3d11CreateDeviceAndSwapChain(
+        pAdapter,
+        DriverType,
+        Software,
+        Flags,
+        pFeatureLevels,
+        FeatureLevels,
+        SDKVersion,
+        pSwapChainDesc,
+        ppSwapChain,
+        ppDevice,
+        pFeatureLevel,
+        ppImmediateContext
+    );
+
+    printf_s("[DevTools] Executed D3D11CreateDeviceAndSwapChain hook, for the menu!\n");
+
+    printf_s("[DevTools] Menu::IsInitialised returned %d\n", Menu::IsInitialised());
+    printf_s("[DevTools] D3D11CreateDeviceAndSwapChain ppSwapChain = 0x%p\n", *ppSwapChain);
+	
+    // If the Menu class hasn't already been initialised, initialise it now.
+    if (!Menu::IsInitialised())
     {
-        if (!bNodeDebugMessages)
+        printf_s("[DevTools] Initialised menu!\n");
+        Menu::InitMenu(*ppSwapChain);
+
+        if (*ppSwapChain)
         {
-            bNodeDebugMessages = TRUE;
-        }
-        else
-        {
-            bNodeDebugMessages = FALSE;
-        }
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+
+            void** pVMTPresent = *reinterpret_cast<void***>(*ppSwapChain);
+
+            printf_s("[DevTools] pVMTPresent = 0x%p\n", pVMTPresent);
+        	
+        	// Store reference to the original D3D11Present function from the SwapChain VTable.
+            d3d11Present = static_cast<tD3D11Present>(pVMTPresent[8]);
+        	
+            printf_s("[DevTools] d3d11Present = 0x%p\n", d3d11Present);
+            DetourAttach(&reinterpret_cast<PVOID&>(d3d11Present), hD3D11Present);
+
+            const long result = DetourTransactionCommit();
+            printf_s("[DevTools] Installed rendering hooks. (result=%ld)\n", result);
+		}
     }
-
-    // Only print the debug messages if the user has explicitly turned them on.
-    if (bNodeDebugMessages)
-    {
-        if (strcmp(param_1, "on_update") || param_1 != "CATHODE:EntityManager::process_triggers" || param_1 != "CATHODE:EntityManager::process_messages")
-        {
-            printf("hNodeDebugMessage: ");
-            printf(param_1);
-            printf("\n");
-        }
-    }
-
-    return param_1;
+	
+    return res;
 }
 
-/*
-    Creates a JMP in code in memory from the @origin to the @destination,
-    return address and function return are @length+@origin
-    @param origin
-    @param destination
-    @parmam length
-    @return byte* retrun address
-*/
-byte* UnprotectMemory(byte* address)
-{
-    VirtualProtect(address, 10, PAGE_EXECUTE_READWRITE, &oldProtect);
-    return address;
-}
 
-/*
-    Creates a JMP in code in memory from the @origin to the @destination,
-    return address and function return are @length+@origin
-    @param origin
-    @param destination
-    @parmam length
-    @return byte* retrun address
-*/
-byte* ReprotectMemory(byte* address)
-{
-    VirtualProtect(address, 10, oldProtect, &oldProtect);
-    return address;
-}
-
-BOOL IsExecutableAddress(LPVOID pAddress)
-{
-    MEMORY_BASIC_INFORMATION mi;
-    VirtualQuery(pAddress, &mi, sizeof(mi));
-
-    return (mi.State == MEM_COMMIT && (mi.Protect & PAGE_EXECUTE_FLAGS));
-}
-
-BOOL APIENTRY DllMain( HMODULE hModule,
+BOOL APIENTRY DllMain( HMODULE /*hModule*/,
                        DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
+                       LPVOID /*lpReserved*/
                      )
 {
     if (DetourIsHelperProcess())
@@ -103,148 +144,111 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         DetourRestoreAfterWith();
 
         AllocConsole();
-        freopen("CONOUT$", "w", stdout);
-        MessageBoxW(0, L"Injected!", L"", 0);
+        FILE* consoleOut;
+        freopen_s(&consoleOut, "CONOUT$", "w", stdout);
 
-        printf("Detours " DETOURS_STRINGIFY(DETOURS_BITS) "\n");
+        printf_s("Detours Architecture: " DETOURS_STRINGIFY(DETOURS_BITS) "\n");
         fflush(stdout);
-
-        printf("NodeDebugFunction: Injected!\n");
-
-        /*
-        // Initialize MinHook.
-        if (MH_Initialize() != MH_OK)
-        {
-            std::cout << "NodeDebugFunction: MH Initialisation Failed!" << std::endl;
-            return 1;
-        }
-        */
-
-        printf("NodeDebugFunction: Hooking into address 0x%x\n", NodeDebugMessage);
-
-        /*SigScanner* sigScanner;
-        sigScanner = new SigScanner();
-        DWORD nodeDebugAddress;
-        DWORD baseAddress;
-        baseAddress = (DWORD)hModule;
-        nodeDebugAddress = sigScanner->FindAddress(nodeDebugMask, 10, baseAddress, 10);
-
-        std::cout << "Base address: " << (char)baseAddress << std::endl;
-        std::cout << "nodeDebugAddress: " << (char)nodeDebugAddress << std::endl;
-        */
-
-        //UnprotectMemory((byte*)&NodeDebugMessage);
-
-        //printf("NodeDebugFunction: IsExecutableAddress (%d)\n", IsExecutableAddress(&NodeDebugMessage));
-
+    	
         DetourTransactionBegin();
-        printf("NodeDebugFunction: DetourTransactionBegin()\n");
-        //std::cout << "NodeDebugFunction: DetourTransactionBegin()" << std::endl;
+        printf_s("[Detours] DetourTransactionBegin()\n");
         
         DetourUpdateThread(GetCurrentThread());
-        printf("NodeDebugFunction: DetourUpdateThread()\n");
-        //std::cout << "NodeDebugFunction: DetourUpdateThread()" << std::endl;
+        printf_s("[Detours] DetourUpdateThread()\n");
 
-        PDETOUR_TRAMPOLINE pDetourTrampoline = NULL;
-        PVOID pRealTarget = NULL;
-        PVOID pRealDetour = NULL;
-        //const auto result = DetourAttachEx((PVOID*)NodeDebugMessage, (PVOID)hNodeDebugMessage, pDetourTrampoline, pRealTarget, pRealDetour);
-        DetourAttachEx(&(PVOID&)NodeDebugMessage, hNodeDebugMessage, &pDetourTrampoline, &pRealTarget, &pRealDetour);
-        printf("NodeDebugFunction: DetourAttachEx()\n");
-        printf("NodeDebugFunction: pDetourTrampoline = %d; pRealTarget = %d; pRealDetour = %d\n", pDetourTrampoline, pRealTarget, pRealDetour);
-        //pNodeDebugMessage = (char*(__stdcall*)(char*))pRealTarget;
-        //printf("NodeDebugFunction: pNodeDebugMessage = %d\n", pNodeDebugMessage);
-        //std::cout << "NodeDebugFunction: DetourAttach()" << std::endl;
+    	// Menu hooks / initialisation code, adapted from Alias Isolation.
+        const HMODULE hModule = GetModuleHandleA("d3d11");
+    	
+        if (hModule)
+        {
+            printf_s("[DevTools] Got handle to d3d11.dll!\n");
+        	
+            d3d11CreateDeviceAndSwapChain = reinterpret_cast<tD3D11CreateDeviceAndSwapChain>(GetProcAddress(hModule, "D3D11CreateDeviceAndSwapChain"));
+        	
+            if (d3d11CreateDeviceAndSwapChain)
+            {
+                printf_s("[DevTools] Got D3D11CreateDeviceAndSwapChain proc address!\n");
+                DetourAttach(&reinterpret_cast<PVOID&>(d3d11CreateDeviceAndSwapChain), hD3D11CreateDeviceAndSwapChain);
+            }
+            else
+            {
+                printf_s("[DevTools] GetProcAddress(\"D3D11CreateDeviceAndSwapChain\") failed!\n");
+            }
+        }
+        else
+        {
+            printf_s("[DevTools] GetModuleHandleA(\"d3d11\") failed: MODULE_NOT_FOUND!\n");
+        }
 
-        const LONG result = DetourTransactionCommit();
-        printf("NodeDebugFunction: DetourTransactionCommit() = %d\n", result);
-        //std::cout << "NodeDebugFunction: DetourTransactionCommit()" << std::endl;
+        //DetourAttach(&reinterpret_cast<PVOID&>(Scaleform_UI_CallASFunction), hScaleform_UI_CallASFunction);
+        //printf_s("[NodeDumper] Scaleform::UI::CallASFunction - pDetourTrampoline = 0x%p; pRealTarget = 0x%p; pRealDetour = 0x%p\n", pDetourTrampoline, pRealTarget, pRealDetour);
+
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevel), CATHODE::Scaleform::UI::hLoadLevel);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::Callback::GameMenu::LoadLevel), CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::HandleLoadRequest), CATHODE::Scaleform::UI::hHandleLoadRequest);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler), CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc1), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc1);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc2), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc2);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc3), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc3);
+
+        const long result = DetourTransactionCommit();
+        printf_s("[DevTools] Installed hooks. (result=%ld)\n", result);
 
         if (result != NO_ERROR)
         {
             switch (result)
             {
             case ERROR_INVALID_BLOCK:
-                printf("Detour: The function referenced is too small to be detoured (%ld)\n", result);
-
+                printf_s("[Detours] The function referenced is too small to be detoured (%ld)\n", result);
+                break;
             case ERROR_INVALID_HANDLE:
-                printf("Detour: The ppPointer parameter is null or points to a null pointer (%ld)\n", result);
-
+                printf_s("[Detours] The ppPointer parameter is null or points to a null pointer (%ld)\n", result);
+                break;
             case ERROR_INVALID_OPERATION:
-                printf("Detour: No pending transaction exists (%ld)\n", result);
-
+                printf_s("[Detours] No pending transaction exists (%ld)\n", result);
+                break;
             case ERROR_NOT_ENOUGH_MEMORY:
-                printf("Detour: Not enough memory exists to complete the operation (%ld)\n", result);
-
+                printf_s("[Detours] Not enough memory exists to complete the operation (%ld)\n", result);
+                break;
             case ERROR_INVALID_PARAMETER:
-                printf("Detour: An invalid parameter has been passed (%ld)\n", result);
-
+                printf_s("[Detours] An invalid parameter has been passed (%ld)\n", result);
+                break;
             default:
-                printf("Detour: Unknown error (%ld)\n", result);
+                printf_s("[Detours] Unknown error (%ld)\n", result);
+                break;
             }
         }
 
-        /*
-        MH_STATUS createHook;
-        createHook = MH_CreateHook(&NodeDebugMessage, &hNodeDebugMessage, (LPVOID*)oNodeDebugMessage);
-        */
-
-        //ReprotectMemory((byte*)&NodeDebugMessage);
-
-        /*
-        // Create a hook in a disabled state.
-        if (createHook != MH_OK)
-        {
-            std::cout << "NodeDebugFunction: Failed to create MH hook! (" << MH_StatusToString(createHook) << ")" << std::endl;
-            return 1;
-        }
-
-        if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK)
-        {
-            std::cout << "NodeDebugFunction: Failed to enable MH hook!" << std::endl;
-            return 1;
-        }
-        */
-
         if (result == NO_ERROR)
         {
-            printf("NodeDebugFunction: Hook active!\n");
+            printf_s("[DevTools] Hooks active!\n\n");
         }
         else
         {
-            printf("NodeDebugFunction: Hook failed!\n");
+            printf_s("[DevTools] Hooks failed!\n");
         }
     }
     else if (ul_reason_for_call == DLL_PROCESS_DETACH)
     {
-        /*
-        // Expected to tell "Hooked!".
-        //MessageBoxW(NULL, L"Not hooked...", L"MinHook Sample", MB_OK);
-
-        // Disable the hook.
-        if (MH_DisableHook(MH_ALL_HOOKS) != MH_OK)
-        {
-            return 1;
-        }
-
-        // Expected to tell "Not hooked...".
-        //MessageBoxW(NULL, L"Not hooked...", L"MinHook Sample", MB_OK);
-
-        // Uninitialize MinHook.
-        if (MH_Uninitialize() != MH_OK)
-        {
-            return 1;
-        }
-        */
-
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourDetach(&(PVOID&)NodeDebugMessage, hNodeDebugMessage);
-        const LONG ret = DetourTransactionCommit();
+    	
+        //DetourDetach(&reinterpret_cast<PVOID&>(Scaleform_UI_CallASFunction), hScaleform_UI_CallASFunction);
+    	
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevel), CATHODE::Scaleform::UI::hLoadLevel);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::Callback::GameMenu::LoadLevel), CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::HandleLoadRequest), CATHODE::Scaleform::UI::hHandleLoadRequest);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler), CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc1), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc1);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc2), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc2);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc3), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc3);
+    	
+        const long ret = DetourTransactionCommit();
 
-        printf("NodeDebugFunction: Removed hook. (result=%d)\n", ret);
+        printf_s("[DevTools] Removed hooks. (result=%ld)\n", ret);
         fflush(stdout);
     }
+	
     return TRUE;
 }
 
