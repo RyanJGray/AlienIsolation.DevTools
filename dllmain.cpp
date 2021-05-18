@@ -1,3 +1,4 @@
+#include "CA.h"
 #include "Menu.h"
 #include "Scaleform.h"
 
@@ -131,7 +132,7 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
     if (ul_reason_for_call == DLL_PROCESS_ATTACH)
     {
         DetourRestoreAfterWith();
-
+    	
         AllocConsole();
         FILE* consoleOut;
         freopen_s(&consoleOut, "CONOUT$", "w", stdout);
@@ -169,17 +170,156 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
             printf_s("[DevTools] GetModuleHandleA(\"d3d11\") failed: MODULE_NOT_FOUND!\n");
         }
 
-        //DetourAttach(&reinterpret_cast<PVOID&>(Scaleform_UI_CallASFunction), hScaleform_UI_CallASFunction);
-        //printf_s("[NodeDumper] Scaleform::UI::CallASFunction - pDetourTrampoline = 0x%p; pRealTarget = 0x%p; pRealDetour = 0x%p\n", pDetourTrampoline, pRealTarget, pRealDetour);
+        MessageBox(nullptr, L"Injected!", L"AlienIsolation.DevTools", NULL);
 
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevel), CATHODE::Scaleform::UI::hLoadLevel);
+        // Overwrite the game data integrity checks (the game verifies all .PKG files and MODELS_LEVEL.BIN files by comparing them against SHA1 hashes).
+		// Here we overwrite the assembly code of the checks in memory with the "NOP" (No Operation) instruction, preventing the game from comparing the hashes.
+
+    	// I need a better way to do this rather than overwriting each address, one at a time...
+    	
+        DWORD oldProtect;
+        auto* patchLocation = reinterpret_cast<char*>(0x009E8BAF);
+    	
+    	// Patch 1
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+        // Patch 2
+        patchLocation = reinterpret_cast<char*>(0x009E8BB0);
+    	VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+        // Patch 3
+        patchLocation = reinterpret_cast<char*>(0x009E8BB1);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+        // Patch 4
+        patchLocation = reinterpret_cast<char*>(0x009E8BB2);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 5
+        patchLocation = reinterpret_cast<char*>(0x009E8BB3);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 6
+        patchLocation = reinterpret_cast<char*>(0x009E8BB4);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 7
+        patchLocation = reinterpret_cast<char*>(0x009E8BB5);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 8
+        patchLocation = reinterpret_cast<char*>(0x009E8BB6);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 9
+        patchLocation = reinterpret_cast<char*>(0x009E8BB7);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 10
+        patchLocation = reinterpret_cast<char*>(0x009E8BB8);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 11
+        patchLocation = reinterpret_cast<char*>(0x009E8BB9);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 12
+        patchLocation = reinterpret_cast<char*>(0x009E8BBA);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 13
+        patchLocation = reinterpret_cast<char*>(0x009E8BBB);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 14
+        patchLocation = reinterpret_cast<char*>(0x009E8BBC);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 15
+        patchLocation = reinterpret_cast<char*>(0x009E8BBD);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 16
+        patchLocation = reinterpret_cast<char*>(0x009E8BBE);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 17
+        patchLocation = reinterpret_cast<char*>(0x009E8BBF);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 18
+        patchLocation = reinterpret_cast<char*>(0x009E8BC0);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 19
+        patchLocation = reinterpret_cast<char*>(0x009E8BC1);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 20
+        patchLocation = reinterpret_cast<char*>(0x009E8BC2);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 21
+        patchLocation = reinterpret_cast<char*>(0x009E8BC3);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 22
+        patchLocation = reinterpret_cast<char*>(0x009E8BC4);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 23
+        patchLocation = reinterpret_cast<char*>(0x009E8BC5);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 24
+        patchLocation = reinterpret_cast<char*>(0x009E8BC6);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	// Patch 25
+        patchLocation = reinterpret_cast<char*>(0x009E8BC7);
+        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy_s(patchLocation, 1, "\x90", 1);
+        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+    	
+    	// Attach the Scaleform hooks.
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::Callback::GameMenu::LoadLevel), CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::HandleLoadRequest), CATHODE::Scaleform::UI::hHandleLoadRequest);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler), CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::GetLevelPointer), CATHODE::Scaleform::UI::hGetLevelPointer);
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc1), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc1);
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc2), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc2);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc3), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc3);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::SetNextLevel), CATHODE::Scaleform::UI::hSetNextLevel);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevel), CATHODE::Scaleform::UI::hLoadLevel);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler), CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
+        //DetourAttach(&reinterpret_cast<PVOID&>(Scaleform_UI_CallASFunction), hScaleform_UI_CallASFunction);
 
+        // Attach the CA hooks.
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::verify_integrity), CATHODE::CA::FILE_HASHES::h_verify_integrity);
+        //DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::terminate_game), CATHODE::CA::FILE_HASHES::h_terminate_game);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::sha1_portable_hash), CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
+    	
         const long result = DetourTransactionCommit();
         printf_s("[DevTools] Installed hooks. (result=%ld)\n", result);
 
@@ -221,16 +361,25 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-    	
-        //DetourDetach(&reinterpret_cast<PVOID&>(Scaleform_UI_CallASFunction), hScaleform_UI_CallASFunction);
-    	
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevel), CATHODE::Scaleform::UI::hLoadLevel);
+
+    	// Detach the rendering hooks.
+        DetourDetach(&reinterpret_cast<PVOID&>(d3d11CreateDeviceAndSwapChain), hD3D11CreateDeviceAndSwapChain);
+        DetourDetach(&reinterpret_cast<PVOID&>(d3d11Present), hD3D11Present);
+
+    	// Detach the Scaleform hooks.
         DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::Callback::GameMenu::LoadLevel), CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::HandleLoadRequest), CATHODE::Scaleform::UI::hHandleLoadRequest);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler), CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::GetLevelPointer), CATHODE::Scaleform::UI::hGetLevelPointer);
         DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc1), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc1);
         DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc2), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc2);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc3), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc3);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::SetNextLevel), CATHODE::Scaleform::UI::hSetNextLevel);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevel), CATHODE::Scaleform::UI::hLoadLevel);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler), CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
+        //DetourDetach(&reinterpret_cast<PVOID&>(Scaleform_UI_CallASFunction), hScaleform_UI_CallASFunction);
+
+        // Detach the CA hooks.
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::verify_integrity), CATHODE::CA::FILE_HASHES::h_verify_integrity);
+        //DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::terminate_game), CATHODE::CA::FILE_HASHES::h_terminate_game);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::sha1_portable_hash), CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
     	
         const long ret = DetourTransactionCommit();
 

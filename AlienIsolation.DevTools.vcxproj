@@ -90,6 +90,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CA.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="libs\detours\src\creatwth.cpp" />
     <ClCompile Include="libs\detours\src\detours.cpp" />
@@ -109,6 +110,7 @@
     <ClCompile Include="Scaleform.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CA.h" />
     <ClInclude Include="libs\detours\src\detours.h" />
     <ClInclude Include="libs\detours\src\detver.h" />
     <ClInclude Include="libs\imgui\backends\imgui_impl_dx11.h" />

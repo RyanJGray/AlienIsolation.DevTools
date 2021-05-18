@@ -8,7 +8,6 @@ namespace CATHODE
 		{
 			namespace GameMenu
 			{
-				inline void* loadLevelThis = nullptr;
 				void __fastcall hLoadLevel(void* _this, void* _EDX, char* level_name);
 				typedef void(__thiscall* tLoadLevel)(void*, char*);
 				inline tLoadLevel LoadLevel = reinterpret_cast<tLoadLevel>(0x008139c0);
@@ -17,14 +16,14 @@ namespace CATHODE
 		
 		namespace UI
 		{
-			inline void* loadLevelThisPtr = nullptr;
-			int __fastcall hLoadLevel(void* _this, void* _EDX, char* level_name);
-			typedef int(__thiscall* tLoadLevel)(void*, char*);
-			inline tLoadLevel LoadLevel = reinterpret_cast<tLoadLevel>(0x0077b340);
+			inline void* g_getLevelPointer_thisPtr = nullptr;
+			int __fastcall hGetLevelPointer(void* _this, void* _EDX, char* level_name);
+			typedef int(__thiscall* tGetLevelPointer)(void*, char*);
+			inline tGetLevelPointer GetLevelPointer = reinterpret_cast<tGetLevelPointer>(0x0077b340);
 
-			void __fastcall hHandleLoadRequest(void* _this, void* _EDX, char* param_1);
-			typedef void(__thiscall* tHandleLoadRequest)(void*, char*);
-			inline tHandleLoadRequest HandleLoadRequest = reinterpret_cast<tHandleLoadRequest>(0x0079a650);
+			void __fastcall hLoadLevel(void* _this, void* _EDX, char* null_char_string);
+			typedef void(__thiscall* tLoadLevel)(void*, char*);
+			inline tLoadLevel LoadLevel = reinterpret_cast<tLoadLevel>(0x0079a650);
 
 			void __fastcall hLoadLevelUnknownFunc1(int param_1);
 			typedef void(__fastcall* tLoadLevelUnknownFunc1)(int);
@@ -34,9 +33,9 @@ namespace CATHODE
 			typedef unsigned(__thiscall* tLoadLevelUnknownFunc2)(void*, char*);
 			inline tLoadLevelUnknownFunc2 LoadLevelUnknownFunc2 = reinterpret_cast<tLoadLevelUnknownFunc2>(0x007a86c0);
 
-			void __fastcall hLoadLevelUnknownFunc3(void* _this, void* _EDX, int param_1);
-			typedef void(__thiscall* tLoadLevelUnknownFunc3)(void*, int);
-			inline tLoadLevelUnknownFunc3 LoadLevelUnknownFunc3 = reinterpret_cast<tLoadLevelUnknownFunc3>(0x0077b320);
+			void __fastcall hSetNextLevel(void* _this, void* _EDX, int level_pointer);
+			typedef void(__thiscall* tSetNextLevel)(void*, int);
+			inline tSetNextLevel SetNextLevel = reinterpret_cast<tSetNextLevel>(0x0077b320);
 			
 			void __fastcall hDispatchRequestToNodeHandler(void* _this, void* _EDX, unsigned* param_1);
 			typedef void(__thiscall* tDispatchRequestToNodeHandler)(void*, unsigned*);
