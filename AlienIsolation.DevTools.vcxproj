@@ -167,11 +167,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CA.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Menu.cpp" />
     <ClCompile Include="Scaleform.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CA.h" />
     <ClInclude Include="Menu.h" />
     <ClInclude Include="Scaleform.h" />
   </ItemGroup>

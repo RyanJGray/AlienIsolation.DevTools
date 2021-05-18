@@ -218,11 +218,13 @@ void Menu::DrawMenu() {
             {
                 levelToLoad = levelPrefix + levelName;
             	
-                printf_s("[DevTools::Menu] Level load requested to level %s, using loadLevelThisPtr = 0x%p!\n", levelToLoad.c_str(), CATHODE::Scaleform::UI::loadLevelThisPtr);
+                printf_s("[DevTools::Menu] Level load requested to level %s, using loadLevelThisPtr = 0x%p!\n", levelToLoad.c_str(), CATHODE::Scaleform::UI::g_getLevelPointer_thisPtr);
             	
-                const int ret = CATHODE::Scaleform::UI::LoadLevel(CATHODE::Scaleform::UI::loadLevelThisPtr, const_cast<char*>(levelToLoad.c_str()));
-                printf_s("[DevTools::Menu] LoadLevel ret = %d\n", ret);
+                const int ret = CATHODE::Scaleform::UI::GetLevelPointer(CATHODE::Scaleform::UI::g_getLevelPointer_thisPtr, const_cast<char*>(levelToLoad.c_str()));
+                printf_s("[DevTools::Menu] GetLevelPointer ret = %d\n", ret);
 
+            	// When UI::GetLevelPointer returns int 0, it seems this indicates that the engine does not recognise the level provided.
+            	// Callback::GameMenu::LoadLevel has a hard-coded check for UI::GetLevelPointer returning int 0, it will terminate execution early if it detects that this happens.
                 if (ret == 0)
                 {
                     invalidLevelError = true;
@@ -230,14 +232,14 @@ void Menu::DrawMenu() {
             	else
             	{
                     invalidLevelError = false;
-                    CATHODE::Scaleform::UI::LoadLevelUnknownFunc3(CATHODE::Scaleform::UI::loadLevelThisPtr, ret);
-                    CATHODE::Scaleform::UI::HandleLoadRequest(CATHODE::Scaleform::UI::loadLevelThisPtr, const_cast<char*>("\0"));
+                    CATHODE::Scaleform::UI::SetNextLevel(CATHODE::Scaleform::UI::g_getLevelPointer_thisPtr, ret);
+                    CATHODE::Scaleform::UI::LoadLevel(CATHODE::Scaleform::UI::g_getLevelPointer_thisPtr, const_cast<char*>("\0"));
                 }
             }
 
         	if (invalidLevelError)
         	{
-                ImGui::TextColored(ImVec4(238, 238, 0, 1), "WARNING: Request blocked - Level not recognised by the engine!");
+                ImGui::TextColored(ImVec4(255, 170, 0, 1), "WARNING: Request blocked - Level not recognised by the engine!");
         	}
 
             ImGui::End();
