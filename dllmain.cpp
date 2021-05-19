@@ -170,8 +170,6 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
             printf_s("[DevTools] GetModuleHandleA(\"d3d11\") failed: MODULE_NOT_FOUND!\n");
         }
 
-        MessageBox(nullptr, L"Injected!", L"AlienIsolation.DevTools", NULL);
-
         // Overwrite the game data integrity checks (the game verifies all .PKG files and MODELS_LEVEL.BIN files by comparing them against SHA1 hashes).
 		// Here we overwrite the assembly code of the checks in memory with the "NOP" (No Operation) instruction, preventing the game from comparing the hashes.
 
