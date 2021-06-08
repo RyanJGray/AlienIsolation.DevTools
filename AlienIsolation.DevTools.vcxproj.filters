@@ -84,6 +84,9 @@
     <ClCompile Include="libs\imgui\backends\imgui_impl_dx11.cpp">
       <Filter>Source Files\libs\detours</Filter>
     </ClCompile>
+    <ClCompile Include="CA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scaleform.h">
@@ -121,6 +124,9 @@
     </ClInclude>
     <ClInclude Include="libs\imgui\backends\imgui_impl_dx11.h">
       <Filter>Header Files\libs\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="CA.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
