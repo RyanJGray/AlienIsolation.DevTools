@@ -1,17 +1,6 @@
-// dllmain.cpp : Defines the entry point for the DLL application.
-#include <Windows.h>
-#include <cstdio>
-#include <fstream>
-#include <detours.h>
-#include <d3d11.h>
-
-#include "Scaleform.h"
 #include "CA.h"
 #include "Menu.h"
-
-#if defined _M_IX86
-#pragma comment(lib, "detours.lib")
-#endif
+#include "Scaleform.h"
 
 // Appears to get called for every ActionScript function call from the engine to Scaleform.
 // Attempting to even initialise variables inside the hooked function crashes the game with access violations, I tried changing the
@@ -181,188 +170,27 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
             printf_s("[DevTools] GetModuleHandleA(\"d3d11\") failed: MODULE_NOT_FOUND!\n");
         }
 
-        MessageBox(nullptr, L"Injected!", L"AlienIsolation.DevTools", NULL);
-
         // Overwrite the game data integrity checks (the game verifies all .PKG files and MODELS_LEVEL.BIN files by comparing them against SHA1 hashes).
 		// Here we overwrite the assembly code of the checks in memory with the "NOP" (No Operation) instruction, preventing the game from comparing the hashes.
 
-    	// I need a better way to do this rather than overwriting each address, one at a time...
-    	
         DWORD oldProtect;
-        auto* patchLocation = reinterpret_cast<char*>(0x009E8BAF);
-    	
-    	// Patch 1
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-        // Patch 2
-        patchLocation = reinterpret_cast<char*>(0x009E8BB0);
-    	VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-        // Patch 3
-        patchLocation = reinterpret_cast<char*>(0x009E8BB1);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-        // Patch 4
-        patchLocation = reinterpret_cast<char*>(0x009E8BB2);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 5
-        patchLocation = reinterpret_cast<char*>(0x009E8BB3);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 6
-        patchLocation = reinterpret_cast<char*>(0x009E8BB4);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 7
-        patchLocation = reinterpret_cast<char*>(0x009E8BB5);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 8
-        patchLocation = reinterpret_cast<char*>(0x009E8BB6);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 9
-        patchLocation = reinterpret_cast<char*>(0x009E8BB7);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 10
-        patchLocation = reinterpret_cast<char*>(0x009E8BB8);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 11
-        patchLocation = reinterpret_cast<char*>(0x009E8BB9);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 12
-        patchLocation = reinterpret_cast<char*>(0x009E8BBA);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 13
-        patchLocation = reinterpret_cast<char*>(0x009E8BBB);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 14
-        patchLocation = reinterpret_cast<char*>(0x009E8BBC);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 15
-        patchLocation = reinterpret_cast<char*>(0x009E8BBD);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 16
-        patchLocation = reinterpret_cast<char*>(0x009E8BBE);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 17
-        patchLocation = reinterpret_cast<char*>(0x009E8BBF);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 18
-        patchLocation = reinterpret_cast<char*>(0x009E8BC0);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 19
-        patchLocation = reinterpret_cast<char*>(0x009E8BC1);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 20
-        patchLocation = reinterpret_cast<char*>(0x009E8BC2);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 21
-        patchLocation = reinterpret_cast<char*>(0x009E8BC3);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 22
-        patchLocation = reinterpret_cast<char*>(0x009E8BC4);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 23
-        patchLocation = reinterpret_cast<char*>(0x009E8BC5);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 24
-        patchLocation = reinterpret_cast<char*>(0x009E8BC6);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 25
-        patchLocation = reinterpret_cast<char*>(0x009E8BC7);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+        int offset = 0x009E8BAF;
+        for (int i = 0; i < 25; i++) {
+            printf_s(("Patching location: " + std::to_string(offset + i) + "\n").c_str());
+            auto* patchLocation = reinterpret_cast<char*>(offset + i);
+            VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+            memcpy_s(patchLocation, 1, "\x90", 1);
+            VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+        }
+        offset = 0x007DBFB0;
+        for (int i = 0; i < 9; i++) {
+            printf_s(("Patching location: " + std::to_string(offset + i) + "\n").c_str());
+            auto* patchLocation = reinterpret_cast<char*>(offset + i);
+            VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
+            memcpy_s(patchLocation, 1, "\x90", 1);
+            VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
+        }
 
-    	// These patches NOP out the MODELS_LEVEL.BIN integrity check.
-        // Patch 26
-        patchLocation = reinterpret_cast<char*>(0x007DBFB0);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 27
-        patchLocation = reinterpret_cast<char*>(0x007DBFB1);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 28
-        patchLocation = reinterpret_cast<char*>(0x007DBFB2);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 29
-        patchLocation = reinterpret_cast<char*>(0x007DBFB3);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 30
-        patchLocation = reinterpret_cast<char*>(0x007DBFB4);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 31
-        patchLocation = reinterpret_cast<char*>(0x007DBFB5);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-        // Patch 32
-        patchLocation = reinterpret_cast<char*>(0x007DBFB6);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 33
-        patchLocation = reinterpret_cast<char*>(0x007DBFB7);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	// Patch 34
-        patchLocation = reinterpret_cast<char*>(0x007DBFB8);
-        VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy_s(patchLocation, 1, "\x90", 1);
-        VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
-    	
     	// Attach the Scaleform hooks.
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::Callback::GameMenu::LoadLevel), CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::GetLevelPointer), CATHODE::Scaleform::UI::hGetLevelPointer);

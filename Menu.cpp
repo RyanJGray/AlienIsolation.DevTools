@@ -1,16 +1,4 @@
 #include "Menu.h"
-
-#include <imgui.h>
-#include <backends/imgui_impl_win32.h>
-#include <backends/imgui_impl_dx11.h>
-
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <d3d11.h>
-#include <cstdio>
-#include <detours.h>
-#include <string>
-
 #include "Scaleform.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -109,7 +97,7 @@ void Menu::DrawMenu() {
 
         ImGui_ImplWin32_Init(g_hWindow);
         ImGui_ImplDX11_Init(g_device, g_context);
-        ImGui::GetIO().ImeWindowHandle = g_hWindow;
+        //io.ImeWindowHandle = g_hWindow;
 
         ID3D11Texture2D* pBackBuffer = nullptr;
         //DX_CHECK(g_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(&pBackBuffer)));
