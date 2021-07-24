@@ -1,6 +1,8 @@
 #include "CA.h"
 #include "Menu.h"
 #include "Scaleform.h"
+#include "Logging.h"
+#include <detours.h>
 
 // Appears to get called for every ActionScript function call from the engine to Scaleform.
 // Attempting to even initialise variables inside the hooked function crashes the game with access violations, I tried changing the
@@ -35,6 +37,34 @@ typedef HRESULT(WINAPI* tD3D11Present)(
 
 // Menu - D3D11 Present hook.
 tD3D11Present d3d11Present = nullptr;
+
+// This will work for now, but I need to write a replacement that will restore the original call bytes, we just overwrite them.
+void hookFunctionCall(int offset, void* replacementFunction)
+{
+    printf_s(("Attaching hook at location: " + std::to_string(offset) + "\n").c_str());
+
+	const SIZE_T patchSize = 5;
+	DWORD oldProtect;
+	char* patchLocation = reinterpret_cast<char*>(offset);
+
+	// Change the memory page protection.
+	VirtualProtect(patchLocation, patchSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+	//to fill out the last 4 bytes of instruction, we need the offset between 
+	//the payload function and the instruction immediately AFTER the call instruction
+    
+	//32 bit relative call opcode is E8, takes 1 32 bit operand for call offset
+    uint8_t instruction[patchSize] = {0xE8, 0x0, 0x0, 0x0, 0x0};
+	const uint32_t relativeAddress = reinterpret_cast<uint32_t>(replacementFunction) - (reinterpret_cast<uint32_t>(patchLocation) + sizeof instruction);
+
+	// Copy the remaining bytes of the instruction (after the opcode).
+	memcpy_s(instruction + 1, patchSize - 1, &relativeAddress, patchSize - 1);
+	
+	// Install the hook.
+	memcpy_s(patchLocation, patchSize, instruction, sizeof(instruction));
+
+    // Restore original memory page protections.
+	VirtualProtect(patchLocation, patchSize, oldProtect, &oldProtect);
+}
 
 
 __declspec(noinline)
@@ -135,8 +165,10 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
     	
         AllocConsole();
         FILE* consoleOut;
-        freopen_s(&consoleOut, "CONOUT$", "w", stdout);
+		freopen_s(&consoleOut, "CONOUT$", "w", stdout);
 
+        MessageBox(0, L"Hooked!", L"", 0);
+    	
         printf_s("Detours Architecture: " DETOURS_STRINGIFY(DETOURS_BITS) "\n");
         fflush(stdout);
     	
@@ -191,6 +223,59 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
             VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
         }
 
+    	// Overwrite some engine logging calls of interest.
+    	// These will have to be manually done here, unfortunately, as MSVC has optimised out every logger call so that they now all call one empty function.
+    	// This results in thousands of calls to said empty function. Hooking it crashes the game, due to the widely varying number (and type) of parameters being passed.
+
+    	// Method taken from http://kylehalladay.com/blog/2020/11/13/Hooking-By-Example.html, thanks!
+    	// Havok error logs.
+    	hookFunctionCall(0x007F8EB9, CATHODE::Logging::HavokLogger::hijackedPrint);
+    	// MusicController - MusicEvent
+       	hookFunctionCall(0x006B95AA, CATHODE::Logging::MusicControllerLogger::hijackedPrint_MusicEvent);
+    	// AnimationCommandLogger - Command changes
+        hookFunctionCall(0x00678E57, CATHODE::Logging::AnimationCommandLogger::hijackedPrint);
+    	// Door logs.
+    	// "only 1 animated composite can be attached to a door"
+    	hookFunctionCall(0x004D90C3, CATHODE::Logging::DoorLogger::hijackedPrint);
+    	// "Not enough streaming budget to load other side of door, opening anyway!"
+        hookFunctionCall(0x004E6B96, CATHODE::Logging::DoorLogger::hijackedPrint);
+    	// "This door has no script so cannot animate! The door must be posed manually, makesure \"detach_anim=true\" by setting \"powered_on_reset=false\""
+    	hookFunctionCall(0x004E8237, CATHODE::Logging::DoorLogger::hijackedPrint);
+    	// Animation logs.
+        // "Unable to find a valid animated model attached to the entity!"
+    	hookFunctionCall(0x004D8D11, CATHODE::Logging::AnimationLogger::hijackedPrint);
+    	// Character node logs.
+        // "Node %s not found on player character skeleton."
+    	hookFunctionCall(0x005D9C6D, CATHODE::Logging::CharacterNodeLogger::hijackedPrint);
+    	// "node [%s] not found for character [%s]"
+    	hookFunctionCall(0x004CDB5A, CATHODE::Logging::CharacterNodeLogger::hijackedPrint);
+    	// 
+    	hookFunctionCall(0x004D6C9C, CATHODE::Logging::CharacterNodeLogger::hijackedPrint);
+    	// Node logs.
+    	//
+    	// Need to make sure I am hooking this right.
+    	//hookFunctionCall(0x004D8751, CATHODE::Logging::CharacterNodeLogger::hijackedPrint);
+    	// Zone logs.
+        // "cannot assign a zone in this way!!!"
+    	hookFunctionCall(0x004E508C, CATHODE::Logging::ZoneLogger::hijackedPrint);
+        // "cannot assign a zone link in this way!!!"
+    	hookFunctionCall(0x004E756C, CATHODE::Logging::ZoneLogger::hijackedPrint);
+    	// "suspend_on_unload must be the same for both zones!!!"
+        hookFunctionCall(0x004E78E1, CATHODE::Logging::ZoneLogger::hijackedPrint);
+    	// Speech logs.
+    	// "%s: priority = %s, timeout = %.2f"
+    	hookFunctionCall(0x006B943E, CATHODE::Logging::SpeechLogger::hijackedPrint_RequestPriority);
+    	// "Queued speech [size = %u]:"
+    	hookFunctionCall(0x006B9460, CATHODE::Logging::SpeechLogger::hijackedPrint_SpeechSize);
+        // "Playing speech:"
+        hookFunctionCall(0x006B946F, CATHODE::Logging::SpeechLogger::hijackedPrint);
+    	// "%s [%s]"
+    	hookFunctionCall(0x006B94BF, CATHODE::Logging::SpeechLogger::hijackedPrint_SpacialAudioType);
+        // "SPEECH: No valid entity connected to speechscript entity attempting to play %s. I need a valid character or sound object - see Jack if you don\'t understand.\n"
+    	hookFunctionCall(0x004AD774, CATHODE::Logging::SpeechLogger::hijackedPrint_SpeechEntity);
+        // "SPEECH: No valid entity connected to speech entity attempting to play %s.  I needa valid character or sound object - see Jack if you don\'t understand.\n"
+    	hookFunctionCall(0x004E026F, CATHODE::Logging::SpeechLogger::hijackedPrint_SpeechEntity);
+    	
     	// Attach the Scaleform hooks.
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::Callback::GameMenu::LoadLevel), CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::GetLevelPointer), CATHODE::Scaleform::UI::hGetLevelPointer);

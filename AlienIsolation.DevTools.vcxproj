@@ -72,6 +72,7 @@
     <ClCompile Include="libs\imgui\imgui_draw.cpp" />
     <ClCompile Include="libs\imgui\imgui_tables.cpp" />
     <ClCompile Include="libs\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Logging.cpp" />
     <ClCompile Include="Menu.cpp" />
     <ClCompile Include="Scaleform.cpp" />
   </ItemGroup>
@@ -87,6 +88,7 @@
     <ClInclude Include="libs\imgui\imstb_rectpack.h" />
     <ClInclude Include="libs\imgui\imstb_textedit.h" />
     <ClInclude Include="libs\imgui\imstb_truetype.h" />
+    <ClInclude Include="Logging.h" />
     <ClInclude Include="Menu.h" />
     <ClInclude Include="Scaleform.h" />
   </ItemGroup>

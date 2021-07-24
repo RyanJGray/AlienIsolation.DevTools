@@ -87,6 +87,9 @@
     <ClCompile Include="CA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Logging.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scaleform.h">
@@ -126,6 +129,9 @@
       <Filter>Header Files\libs\imgui</Filter>
     </ClInclude>
     <ClInclude Include="CA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
