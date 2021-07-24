@@ -166,8 +166,6 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
         AllocConsole();
         FILE* consoleOut;
 		freopen_s(&consoleOut, "CONOUT$", "w", stdout);
-
-        MessageBox(0, L"Hooked!", L"", 0);
     	
         printf_s("Detours Architecture: " DETOURS_STRINGIFY(DETOURS_BITS) "\n");
         fflush(stdout);
