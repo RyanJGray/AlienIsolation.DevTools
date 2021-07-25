@@ -152,10 +152,10 @@ void Menu::DrawMenu() {
 	
     // If the user wants to display the menu, then render it.
     if (g_showMenu) {
-        g_showDemoWindow = true;
+        //g_showDemoWindow = true;
         static bool alienIsolation_devTools_menu_showAboutWindow = false;
 
-        ImGui::ShowDemoWindow(&g_showDemoWindow);
+        //ImGui::ShowDemoWindow(&g_showDemoWindow);
 
         if (alienIsolation_devTools_menu_showAboutWindow) {
             if (ImGui::Begin((g_modName + " - About").c_str(), &alienIsolation_devTools_menu_showAboutWindow, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
