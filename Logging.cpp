@@ -1,4 +1,5 @@
 #include "Logging.h"
+#include "Menu_Log.hpp"
 
 #include <cstdint>
 #include <cstdio>
@@ -10,11 +11,11 @@ void Logger::printFormattedMessage(const char* formatted_message)
 {
 	if (!formatted_message && formatted_message != nullptr)
 	{
-		printf_s("[Logger] Error - Someone attempted to log a message with a null pointer!\n");
+		logger.AddLog("[Logger] Error - Someone attempted to log a message with a null pointer!\n");
 	}
 	else
 	{
-		printf_s("%s\n", formatted_message);
+		logger.AddLog("%s\n", formatted_message);
 	}
 }
 

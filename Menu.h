@@ -6,11 +6,9 @@
 #include <cstdio>
 #include <string>
 
-#include "imgui.h"
+#include <imgui.h>
 #include "backends/imgui_impl_win32.h"
 #include "backends/imgui_impl_dx11.h"
-#define DETOURS_VERSION 0x4c0c1
-#include "detours.h"
 
 class Menu
 {

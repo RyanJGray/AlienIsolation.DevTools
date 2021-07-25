@@ -41,7 +41,7 @@ tD3D11Present d3d11Present = nullptr;
 // This will work for now, but I need to write a replacement that will restore the original call bytes, we just overwrite them.
 void hookFunctionCall(int offset, void* replacementFunction)
 {
-    printf_s(("Attaching hook at location: " + std::to_string(offset) + "\n").c_str());
+    printf_s(("[DevTools] Attaching function call hook at location: " + std::to_string(offset) + "\n").c_str());
 
 	const SIZE_T patchSize = 5;
 	DWORD oldProtect;

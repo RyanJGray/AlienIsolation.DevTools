@@ -74,6 +74,7 @@
     <ClCompile Include="libs\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Logging.cpp" />
     <ClCompile Include="Menu.cpp" />
+    <ClCompile Include="Menu_Log.hpp" />
     <ClCompile Include="Scaleform.cpp" />
   </ItemGroup>
   <ItemGroup>

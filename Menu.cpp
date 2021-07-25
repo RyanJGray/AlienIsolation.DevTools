@@ -1,10 +1,10 @@
 #include "Menu.h"
 #include "Scaleform.h"
+#include "Menu_Log.hpp"
+
+#include <detours.h>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-// Forward declare g_device, as it is populated in rendering.cpp.
-//extern ID3D11Device* g_device;
 
 IDXGISwapChain* g_swapChain = nullptr;
 ID3D11Device* g_device = nullptr;
@@ -16,6 +16,10 @@ WNDPROC                 g_originalWndProcHandler = nullptr;
 bool g_menuInitialised = false;
 bool g_showDemoWindow = false;
 bool g_showMenu = false;
+
+const std::string g_modName = "Alien: Isolation DevTools";
+const std::string g_modVersion = "0.1.1 (Alpha)";
+const std::string g_modFullName = g_modName + " " + g_modVersion;
 
 Menu::Menu()
 {
@@ -80,14 +84,18 @@ void Menu::DrawMenu() {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO(); (void)io;
-    	// Enable ImGUI support for gamepad and keyboard input.
+    	// Enable ImGUI support for keyboard and gamepad input.
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
         // Get the swapchain description (we use this to get the handle to the game's window).
         DXGI_SWAP_CHAIN_DESC dxgiSwapChainDesc;
         //DX_CHECK(g_swapChain->GetDesc(&dxgiSwapChainDesc));
-        g_swapChain->GetDesc(&dxgiSwapChainDesc);
+        if (FAILED(g_swapChain->GetDesc(&dxgiSwapChainDesc)))
+        {
+	        DebugBreak();
+        	return;
+        }
 
         ImGui::StyleColorsDark();
     	
@@ -118,11 +126,12 @@ void Menu::DrawMenu() {
         }
         else {
             DebugBreak();
+        	return;
         }
 
         pBackBuffer->Release();
 
-        printf_s("Menu initialised!\n");
+        printf_s("[DevTools] Menu initialised successfully!\n");
     	
         g_menuInitialised = true;
     }
@@ -131,17 +140,26 @@ void Menu::DrawMenu() {
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
-
+	
+    static bool alienIsolation_devTools_menu_showEngineLog = true;
+    if (alienIsolation_devTools_menu_showEngineLog) {
+    	// Show our CATHODE log output window.
+	    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
+    	
+	    // Actually call in the regular Log helper.
+	    logger.Draw((g_modName + " - Engine Log").c_str(), &alienIsolation_devTools_menu_showEngineLog);
+    }
+	
     // If the user wants to display the menu, then render it.
     if (g_showMenu) {
         g_showDemoWindow = true;
         static bool alienIsolation_devTools_menu_showAboutWindow = false;
 
-        //ImGui::ShowDemoWindow(&g_showDemoWindow);
+        ImGui::ShowDemoWindow(&g_showDemoWindow);
 
         if (alienIsolation_devTools_menu_showAboutWindow) {
-            if (ImGui::Begin("Alien: Isolation DevTools - About", &alienIsolation_devTools_menu_showAboutWindow, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
-                ImGui::TextColored(ImVec4(255, 170, 0, 1), "Alien: Isolation DevTools 0.1.0 (Alpha) - Built on %s at %s", __DATE__, __TIME__);
+            if (ImGui::Begin((g_modName + " - About").c_str(), &alienIsolation_devTools_menu_showAboutWindow, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
+                ImGui::TextColored(ImVec4(255, 170, 0, 1), (g_modFullName + " - Built on %s at %s").c_str(), __DATE__, __TIME__);
                 ImGui::Text("Dear ImGui %s", ImGui::GetVersion());
                 ImGui::Text("Detours %s", DETOURS_STRINGIFY(DETOURS_VERSION));
                 ImGui::Separator();
@@ -170,13 +188,13 @@ void Menu::DrawMenu() {
 
             ImGui::End();
         }
-
+    	
         // Get the center of the screen.
         const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
         {
-            ImGui::Begin("Alien: Isolation DevTools - Settings", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Begin((g_modName + " - Settings").c_str(), nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
 
             if (ImGui::BeginMenuBar()) {
                 if (ImGui::BeginMenu("Help")) {
@@ -186,11 +204,18 @@ void Menu::DrawMenu() {
 
                     ImGui::EndMenu();
                 }
+            	if (ImGui::BeginMenu("Tools")) {
+	                if (ImGui::MenuItem("Engine Log")) {
+		                alienIsolation_devTools_menu_showEngineLog = true;
+	                }
+
+            		ImGui::EndMenu();
+                }
 
                 ImGui::EndMenuBar();
             }
 
-            ImGui::TextColored(ImVec4(255, 170, 0, 1), "Alien: Isolation DevTools 0.1.0 (Alpha)");
+            ImGui::TextColored(ImVec4(255, 170, 0, 1), g_modFullName.c_str());
 
             ImGui::Separator();
 
