@@ -9,7 +9,7 @@ using namespace CATHODE::Logging;
 
 void Logger::printFormattedMessage(const char* formatted_message)
 {
-	if (!formatted_message && formatted_message != nullptr)
+	if (!formatted_message || formatted_message == nullptr)
 	{
 		logger.AddLog("[Logger] Error - Someone attempted to log a message with a null pointer!\n");
 	}
@@ -99,9 +99,28 @@ void AnimationCommandLogger::hijackedPrint(char* buffer, const char* format, con
 	printFormattedMessage(buffer);
 }
 
-void DoorLogger::hijackedPrint(char* /*unknown_1*/, char* /*unknown_2*/, const char* format)
+void AnimationDataLogger::hijackedPrint(const char* animation_data_set, const char* format,
+										const char* animation_data_label)
 {
-	formatAndPrintFormattedMessage(nullptr, format, "");
+	char formatBuffer[256] = {};
+	sprintf_s(formatBuffer, 256, format, animation_data_set, animation_data_label);
+	printFormattedMessage(formatBuffer);
+}
+
+void DoorLogger::hijackedPrint(void* this_ptr, bool do_not_log, const char* format)
+{	
+	if (!do_not_log)
+	{
+		char formatBuffer[256] = {};
+		sprintf_s(formatBuffer, 256, "{Entity: 0x%p} %s", this_ptr, format);
+		printFormattedMessage(formatBuffer);
+	}
+	else
+	{
+		char formatBuffer[256] = {};
+		sprintf_s(formatBuffer, 256, "{Entity: 0x%p} Warning - Ignoring DoorLogger print due to \"do_not_log\" being %d.", this_ptr, do_not_log);
+		printFormattedMessage(formatBuffer);
+	}
 }
 
 void AnimationLogger::hijackedPrint(char* /*unknown_1*/, char* /*unknown_2*/, const char* format)
@@ -114,9 +133,11 @@ void CharacterNodeLogger::hijackedPrint(char* /*unknown_1*/, char* /*unknown_2*/
 	formatAndPrintFormattedMessage(nullptr, format, node_name);
 }
 
-void ZoneLogger::hijackedPrint(char* /*this_ptr*/, int /*zero*/, const char* format)
+void ZoneLogger::hijackedPrint(void* this_ptr, bool /*do_not_log*/, const char* format)
 {
-	formatAndPrintFormattedMessage(nullptr, format, "");
+	char formatBuffer[256] = {};
+	sprintf_s(formatBuffer, 256, "{Entity: 0x%p} %s", this_ptr, format);
+	printFormattedMessage(formatBuffer);
 }
 
 void SpeechLogger::hijackedPrint_RequestPriority(char* /*unknown_1*/, const char* format, char* unknown_str_1, char* priority, double* timeout)

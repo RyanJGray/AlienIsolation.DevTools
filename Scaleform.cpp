@@ -1,4 +1,3 @@
-#include "Menu.h"
 #include "Scaleform.h"
 
 using namespace CATHODE::Scaleform;

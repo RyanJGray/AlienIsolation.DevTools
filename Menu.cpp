@@ -1,6 +1,7 @@
 #include "Menu.h"
 #include "Scaleform.h"
 #include "Menu_Log.hpp"
+#include "EntityInterface.h"
 
 #include <detours.h>
 
@@ -253,6 +254,16 @@ void Menu::DrawMenu() {
         	if (invalidLevelError)
         	{
                 ImGui::TextColored(ImVec4(255, 170, 0, 1), "WARNING: Request blocked - Level not recognised by the engine!");
+        	}
+
+        	ImGui::Separator();
+
+        	ImGui::Text("EntityInterface Testing Controls");
+
+        	if (ImGui::Button("Attempt to retrieve bool from an entity"))
+        	{
+        		logger.AddLog("[WIP] Attempting to retrieve bool from an entity...\n");
+                //CATHODE::EntityInterface::find_parameter_bool()
         	}
 
             ImGui::End();

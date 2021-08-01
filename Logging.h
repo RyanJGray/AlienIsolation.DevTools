@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 namespace CATHODE::Logging
 {
@@ -31,10 +32,16 @@ namespace CATHODE::Logging
 		static void hijackedPrint(char* buffer, const char* format, const char* command_type, const char* command_name);
 	};
 
+	class AnimationDataLogger : Logger
+	{
+	public:
+		static void hijackedPrint(const char* animation_data_set, const char* format, const char* animation_data_label);
+	};
+	
 	class DoorLogger : Logger
 	{
 	public:
-		static void hijackedPrint(char* unknown_1, char* unknown_2, const char* format);
+		static void hijackedPrint(void* this_ptr, bool do_not_log, const char* format);
 	};
 
 	class AnimationLogger : Logger
@@ -52,7 +59,7 @@ namespace CATHODE::Logging
 	class ZoneLogger : Logger
 	{
 	public:
-		static void hijackedPrint(char* this_ptr, int zero, const char* format);
+		static void hijackedPrint(void* this_ptr, bool do_not_log, const char* format);
 	};
 
 	class SpeechLogger : Logger

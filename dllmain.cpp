@@ -2,6 +2,8 @@
 #include "Menu.h"
 #include "Scaleform.h"
 #include "Logging.h"
+#include "EntityInterface.h"
+
 #include <detours.h>
 
 // Appears to get called for every ActionScript function call from the engine to Scaleform.
@@ -232,6 +234,23 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
        	hookFunctionCall(0x006B95AA, CATHODE::Logging::MusicControllerLogger::hijackedPrint_MusicEvent);
     	// AnimationCommandLogger - Command changes
         hookFunctionCall(0x00678E57, CATHODE::Logging::AnimationCommandLogger::hijackedPrint);
+    	// AnimationDataLogger logs.
+    	// "Attempt to load bad animation data - set: %s - label: %s\n"
+    	int hookAddresses[7] = {
+			0x004E4661,
+    		0x004E4798,
+    		0x00579568,
+    		0x0057969C,
+    		0x00579F21,
+    		0x0057A031,
+    		// "The animation set \"%s\" does not contain animation \"%s\" - Check the script! - Carlo\n"
+    		0x004E4E9B
+    	};
+    	for (int i = 0; i <= 6; i++)
+    	{
+    		hookFunctionCall(hookAddresses[i], CATHODE::Logging::AnimationDataLogger::hijackedPrint);
+    	}
+    	
     	// Door logs.
     	// "only 1 animated composite can be attached to a door"
     	hookFunctionCall(0x004D90C3, CATHODE::Logging::DoorLogger::hijackedPrint);
@@ -288,6 +307,9 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::verify_integrity), CATHODE::CA::FILE_HASHES::h_verify_integrity);
         //DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::terminate_game), CATHODE::CA::FILE_HASHES::h_terminate_game);
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::sha1_portable_hash), CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
+
+        // Attach the EntityInterface hooks.
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterBool), CATHODE::EntityInterface::hFindParameterBool);
     	
         const long result = DetourTransactionCommit();
         printf_s("[DevTools] Installed hooks. (result=%ld)\n", result);
@@ -349,6 +371,9 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
         DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::verify_integrity), CATHODE::CA::FILE_HASHES::h_verify_integrity);
         //DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::terminate_game), CATHODE::CA::FILE_HASHES::h_terminate_game);
         DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::sha1_portable_hash), CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
+
+        // Detach the EntityInterface hooks.
+    	DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterBool), CATHODE::EntityInterface::hFindParameterBool);
     	
         const long ret = DetourTransactionCommit();
 

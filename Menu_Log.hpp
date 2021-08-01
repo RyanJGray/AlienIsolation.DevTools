@@ -38,7 +38,8 @@ inline struct DevToolsEngineLog
     }
 
     void    Draw(const char* title, bool* p_open = NULL)
-    {	
+    {
+    	ImGui::SetNextWindowBgAlpha(0.0f);
         if (!ImGui::Begin(title, p_open))
         {
             ImGui::End();
