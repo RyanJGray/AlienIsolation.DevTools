@@ -3,6 +3,7 @@
 #include "Scaleform.h"
 #include "Logging.h"
 #include "EntityInterface.h"
+#include "FLOAT_MODULATE_RANDOM.h"
 
 #include <detours.h>
 
@@ -236,7 +237,7 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
         hookFunctionCall(0x00678E57, CATHODE::Logging::AnimationCommandLogger::hijackedPrint);
     	// AnimationDataLogger logs.
     	// "Attempt to load bad animation data - set: %s - label: %s\n"
-    	int hookAddresses[7] = {
+    	const int hookAddresses[7] = {
 			0x004E4661,
     		0x004E4798,
     		0x00579568,
@@ -278,7 +279,7 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
         // "cannot assign a zone link in this way!!!"
     	hookFunctionCall(0x004E756C, CATHODE::Logging::ZoneLogger::hijackedPrint);
     	// "suspend_on_unload must be the same for both zones!!!"
-        hookFunctionCall(0x004E78E1, CATHODE::Logging::ZoneLogger::hijackedPrint);
+        //hookFunctionCall(0x004E78E1, CATHODE::Logging::ZoneLogger::hijackedPrint);
     	// Speech logs.
     	// "%s: priority = %s, timeout = %.2f"
     	hookFunctionCall(0x006B943E, CATHODE::Logging::SpeechLogger::hijackedPrint_RequestPriority);
@@ -307,10 +308,18 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::verify_integrity), CATHODE::CA::FILE_HASHES::h_verify_integrity);
         //DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::terminate_game), CATHODE::CA::FILE_HASHES::h_terminate_game);
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::sha1_portable_hash), CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::LOAD_LEVEL::StartGameplayOnLevel), CATHODE::CA::LOAD_LEVEL::hStartGameplayOnLevel);
 
         // Attach the EntityInterface hooks.
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterString), CATHODE::EntityInterface::hFindParameterString);
         DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterBool), CATHODE::EntityInterface::hFindParameterBool);
-    	
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterVector), CATHODE::EntityInterface::hFindParameterVector);
+    	DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterFloat), CATHODE::EntityInterface::hFindParameterFloat);
+    	DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterEnum), CATHODE::EntityInterface::hFindParameterEnum);
+
+        // Attach the FLOAT_MODULATE_RANDOM hooks.
+    	DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::FLOAT_MODULATE_RANDOM::SaveValues), CATHODE::FLOAT_MODULATE_RANDOM::hSaveValues);
+
         const long result = DetourTransactionCommit();
         printf_s("[DevTools] Installed hooks. (result=%ld)\n", result);
 
@@ -371,10 +380,18 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
         DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::verify_integrity), CATHODE::CA::FILE_HASHES::h_verify_integrity);
         //DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::terminate_game), CATHODE::CA::FILE_HASHES::h_terminate_game);
         DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::sha1_portable_hash), CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::LOAD_LEVEL::StartGameplayOnLevel), CATHODE::CA::LOAD_LEVEL::hStartGameplayOnLevel);
 
         // Detach the EntityInterface hooks.
+        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterString), CATHODE::EntityInterface::hFindParameterString);
     	DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterBool), CATHODE::EntityInterface::hFindParameterBool);
-    	
+        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterVector), CATHODE::EntityInterface::hFindParameterVector);
+    	DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterFloat), CATHODE::EntityInterface::hFindParameterFloat);
+    	DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterEnum), CATHODE::EntityInterface::hFindParameterEnum);
+
+    	// Attach the FLOAT_MODULATE_RANDOM hooks.
+    	DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::FLOAT_MODULATE_RANDOM::SaveValues), CATHODE::FLOAT_MODULATE_RANDOM::hSaveValues);
+
         const long ret = DetourTransactionCommit();
 
         printf_s("[DevTools] Removed hooks. (result=%ld)\n", ret);

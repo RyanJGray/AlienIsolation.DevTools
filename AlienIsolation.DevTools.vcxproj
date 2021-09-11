@@ -59,6 +59,7 @@
     <ClCompile Include="CA.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="EntityInterface.cpp" />
+    <ClCompile Include="FLOAT_MODULATE_RANDOM.cpp" />
     <ClCompile Include="libs\detours\src\creatwth.cpp" />
     <ClCompile Include="libs\detours\src\detours.cpp" />
     <ClCompile Include="libs\detours\src\disasm.cpp" />
@@ -82,6 +83,7 @@
     <ClInclude Include="CA.h" />
     <ClInclude Include="CATHODE.h" />
     <ClInclude Include="EntityInterface.h" />
+    <ClInclude Include="FLOAT_MODULATE_RANDOM.h" />
     <ClInclude Include="libs\detours\src\detours.h" />
     <ClInclude Include="libs\detours\src\detver.h" />
     <ClInclude Include="libs\imgui\backends\imgui_impl_dx11.h" />

@@ -2,10 +2,12 @@
 
 using namespace CATHODE::Scaleform;
 
+bool g_Game_levelLoadInProgress = false;
+
 __declspec(noinline)
 void __fastcall Callback::GameMenu::hLoadLevel(void* _this, void* _EDX, char* level_name)
 {
-	//printf_s("[Callback::GameMenu::LoadLevel] _this: 0x%p; _EDX: 0x%p; level_name: %s\n", _this, _EDX, level_name);
+	//logger.AddLog("[Callback::GameMenu::LoadLevel] _this: 0x%p; _EDX: 0x%p; level_name: %s\n", _this, _EDX, level_name);
 
 	//level_name = const_cast<char*>("Production\\Tech_MuthrCore");
 
@@ -20,7 +22,7 @@ int __fastcall UI::hGetLevelPointer(void* _this, void* _EDX, char* level_name)
 	// Save the this pointer for reuse later in the ImGUI menu.
 	g_getLevelPointer_thisPtr = _this;
 
-	//printf_s("[Scaleform::UI::GetLevelPointer] g_getLevelPointer_thisPtr: 0x%p; _this: 0x%p; _EDX: 0x%p; level_name: %s\n", g_getLevelPointer_thisPtr, _this, _EDX, level_name);
+	//logger.AddLog("[Scaleform::UI::GetLevelPointer] g_getLevelPointer_thisPtr: 0x%p; _this: 0x%p; _EDX: 0x%p; level_name: %s\n", g_getLevelPointer_thisPtr, _this, _EDX, level_name);
 
 	/*if (strcmp(level_name, "Production\\BSP_Torrens") == 0)
 	{
@@ -42,10 +44,14 @@ int __fastcall UI::hGetLevelPointer(void* _this, void* _EDX, char* level_name)
 	//return 0;
 }
 
+// BUG! Doing almost anything in here corrupts the stack, crashing the game, woops.
+// Triggered on fade-to-black during level transitions and when requested via the game's UI.
 __declspec(noinline)
 void __fastcall UI::hLoadLevel(void* _this, void* _EDX, char* null_char_string)
 {
-	//printf_s("[Scaleform::UI::LoadLevel] _this: 0x%p; _EDX: 0x%p; null_char_string: %s\n", _this, _EDX, null_char_string);
+	g_Game_levelLoadInProgress = true;
+
+	//logger.AddLog("[Scaleform::UI::LoadLevel] _this: 0x%p; _EDX: 0x%p; null_char_string: %s\n", _this, _EDX, null_char_string);
 
 	LoadLevel(_this, null_char_string);
 }
@@ -61,16 +67,16 @@ void __fastcall UI::hLoadLevelUnknownFunc1(int param_1)
 __declspec(noinline)
 unsigned __fastcall UI::hLoadLevelUnknownFunc2(void* _this, void* _EDX, char* level_name)
 {
-	//printf_s("Yolo swaggins from unknown func 2!\n");
 	//printf_s("[Scaleform::UI::LoadLevelUnknownFunc2] _this: 0x%p; _EDX: 0x%p; level_name: %s\n", _this, _EDX, level_name);
 
 	return LoadLevelUnknownFunc2(_this, level_name);
 }
 
+// Triggered on fade-to-black during level transitions and when requested via the game's UI.
 __declspec(noinline)
 void __fastcall UI::hSetNextLevel(void* _this, void* _EDX, int level_pointer)
 {
-	//printf_s("[Scaleform::UI::SetNextLevel] _this: 0x%p; _EDX: 0x%p; level_pointer: %d\n", _this, _EDX, level_pointer);
+	//logger.AddLog("[Scaleform::UI::SetNextLevel] _this: 0x%p; _EDX: 0x%p; level_pointer: %d\n", _this, _EDX, level_pointer);
 
 	SetNextLevel(_this, level_pointer);
 }

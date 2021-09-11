@@ -16,5 +16,12 @@ namespace CATHODE::CA
 		typedef void(__stdcall* t_sha1_portable_hash)(unsigned char*, unsigned);
 		inline t_sha1_portable_hash sha1_portable_hash = reinterpret_cast<t_sha1_portable_hash>(0x009335b0);
 	}
+
+	namespace LOAD_LEVEL
+	{
+		void __fastcall hStartGameplayOnLevel(void* _this, void* _EDX, int param_1, char* level_name);
+		typedef void(__thiscall* tStartGameplayOnLevel)(void*, int, char*);
+		inline tStartGameplayOnLevel StartGameplayOnLevel = reinterpret_cast<tStartGameplayOnLevel>(0x007BCB00);
+	}
 }
 

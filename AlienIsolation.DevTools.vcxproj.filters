@@ -96,6 +96,9 @@
     <ClCompile Include="Menu_Log.hpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="FLOAT_MODULATE_RANDOM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scaleform.h">
@@ -144,6 +147,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CATHODE.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FLOAT_MODULATE_RANDOM.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

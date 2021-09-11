@@ -115,12 +115,12 @@ void DoorLogger::hijackedPrint(void* this_ptr, bool do_not_log, const char* form
 		sprintf_s(formatBuffer, 256, "{Entity: 0x%p} %s", this_ptr, format);
 		printFormattedMessage(formatBuffer);
 	}
-	else
+	/*else
 	{
 		char formatBuffer[256] = {};
 		sprintf_s(formatBuffer, 256, "{Entity: 0x%p} Warning - Ignoring DoorLogger print due to \"do_not_log\" being %d.", this_ptr, do_not_log);
 		printFormattedMessage(formatBuffer);
-	}
+	}*/
 }
 
 void AnimationLogger::hijackedPrint(char* /*unknown_1*/, char* /*unknown_2*/, const char* format)

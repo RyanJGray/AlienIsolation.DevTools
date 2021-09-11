@@ -4,6 +4,8 @@
 
 using namespace CATHODE::CA;
 
+extern bool g_Game_levelLoadInProgress;
+
 __declspec(noinline)
 void __stdcall FILE_HASHES::h_verify_integrity(char* package_file_name, unsigned* param_2, unsigned param_3)
 {
@@ -26,3 +28,10 @@ void __stdcall FILE_HASHES::h_sha1_portable_hash(unsigned char* message_array, u
 	sha1_portable_hash(message_array, length);
 }
 
+__declspec(noinline)
+void __fastcall LOAD_LEVEL::hStartGameplayOnLevel(void* _this, void* /*_EDX*/, int param_1, char* level_name)
+{
+	g_Game_levelLoadInProgress = false;
+
+	StartGameplayOnLevel(_this, param_1, level_name);
+}
