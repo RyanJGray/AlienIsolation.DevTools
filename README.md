@@ -29,7 +29,7 @@ You can break things in _interesting_ ways by doing that, (like making it okay f
 
 Ripley, in the 3rd person, when I blocked all requests from the game to CATHODE for the value of almost any Enum parameters.
 ![image](https://cdn.discordapp.com/attachments/595332211826229257/873632514781089882/unknown.png)
-(This forces the game to use the default values which are hard-coded into the game's binary for all Enums, which makes all NPCs your ally, and causes the camera to do
+(This forces the game to use the default values which are hard-coded into the game's binary for all of the blocked Enums, which makes all NPCs your ally, and causes the camera to do
 the above, amongst others).
 
 ## Todo
