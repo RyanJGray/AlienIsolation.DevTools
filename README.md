@@ -8,11 +8,16 @@ In its current state, the project can intercept requests from the game's code to
 
 It also features an ImGui-based in-game UI allowing you to control some visual demonstrations of what this project could allow you to do.
 
-### How does this work (right now)?
+## :information_source: Things to be aware of
+- This tool will patch parts of the game's executable code (in memory) on injection to disable integrity checks _Creative Assembly_ added into the game.
+Without doing this, **any** attempts to modify key data files such as `MAIN.PKG`, `MODELS_LEVEL.BIN` and other `*.PKG` files will trip the integrity check and the game will close.
+
+## How does this work (right now)?
 The interaction between the game's code and _CATHODE_ (as I understand it) is as follows:
-1. The game's code requests the value of a node's parameter on an entity via _CATHODE_'s function "find_parameter".
-2. _CATHODE_ searches for the parameter on that entity, if it finds it, "find_parameter" returns true and stores the value of that parameter in the "output_ptr" parameter.
-3. The game's code updates the entity's state in-game with the new value of that parameter.
+1. The game's code requests the value of a node's parameter on an entity via _CATHODE_'s function `find_parameter`.
+2. _CATHODE_ searches for the parameter on that entity, if it finds it, `find_parameter` returns true and stores the value of that parameter in the `output_ptr` parameter.
+(`output_ptr` is initialised with a default value by the game's code, which is used as a fallback in case _CATHODE_ fails to find the value).
+4. The game's code updates the entity's state in-game with the new value of that parameter.
 
 By hijacking this interaction between the game and _CATHODE_, we can effectively control (in theory) the state of almost any parameter on any entity in the game, 
 as long as we have two key parameters:
@@ -27,7 +32,7 @@ the game will not crash, and instead that node's call seems to just be skipped i
 
 You can break things in _interesting_ ways by doing that, (like making it okay for you to attack story critical NPCs).
 
-Ripley, in the 3rd person, when I blocked all requests from the game to _CATHODE_ for the value of almost any Enum parameters.
+Ripley, in the 3rd person, this was caused when I blocked all requests from the game to _CATHODE_ for the value of almost any Enum parameters.
 
 ![image](https://cdn.discordapp.com/attachments/595332211826229257/873632514781089882/unknown.png)
 
@@ -35,5 +40,5 @@ Ripley, in the 3rd person, when I blocked all requests from the game to _CATHODE
 the above, amongst others).
 
 ## Todo
-- [ ] Rewrite (using templates) the repetitive janky mess that I wrote to hijack _CATHODE_'s templated "find_parameter" function. 
-- [ ] Intercept requests from the game's code to _CATHODE_'s templated function "create_entity", this _might_ let us track which entities exist and display them in the UI.
+- [ ] Rewrite (using templates) the repetitive janky mess that I wrote to hijack _CATHODE_'s templated `find_parameter` function. 
+- [ ] Intercept requests from the game's code to _CATHODE_'s templated function `create_entity`, this _might_ let us track which entities exist and display them in the UI.
