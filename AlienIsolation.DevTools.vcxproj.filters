@@ -31,6 +31,24 @@
     <Filter Include="Header Files\libs\detours">
       <UniqueIdentifier>{92c2dc3d-92af-4de8-a5b3-381e6c798c83}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\CATHODE">
+      <UniqueIdentifier>{833255d5-7ac5-487d-ac02-0ad47a9c42f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CATHODE">
+      <UniqueIdentifier>{e5aaa51b-aa03-40fc-90dc-cdf8594b2d15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game">
+      <UniqueIdentifier>{fd9d11b8-4b66-480b-a97c-de210af3ab91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game">
+      <UniqueIdentifier>{64619a84-11b0-45e3-aca7-71088dd637d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\AI">
+      <UniqueIdentifier>{7bbc0553-1e62-4a5e-82a3-b1212ca8959c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\AI">
+      <UniqueIdentifier>{d70c90a5-0797-49eb-94cf-6b6dbf7af147}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -90,14 +108,35 @@
     <ClCompile Include="Logging.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EntityInterface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Menu_Log.hpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="GAME_LEVEL_MANAGER.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="HackingGame.cpp">
+      <Filter>Source Files\CATHODE</Filter>
+    </ClCompile>
+    <ClCompile Include="ShortGuid.cpp">
+      <Filter>Source Files\CATHODE</Filter>
+    </ClCompile>
+    <ClCompile Include="GameFlow.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityInterface.cpp">
+      <Filter>Source Files\CATHODE</Filter>
+    </ClCompile>
+    <ClCompile Include="StringTable.cpp">
+      <Filter>Source Files\CATHODE</Filter>
+    </ClCompile>
     <ClCompile Include="FLOAT_MODULATE_RANDOM.cpp">
+      <Filter>Source Files\CATHODE</Filter>
+    </ClCompile>
+    <ClCompile Include="DevTools.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AI_BEHAVIORAL.cpp">
+      <Filter>Source Files\Game\AI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -143,14 +182,47 @@
     <ClInclude Include="Logging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EntityInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CATHODE.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FLOAT_MODULATE_RANDOM.h">
+    <ClInclude Include="GAME_LEVEL_MANAGER.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="UI.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="HackingGame.h">
+      <Filter>Header Files\CATHODE</Filter>
+    </ClInclude>
+    <ClInclude Include="TriggerInfo.h">
+      <Filter>Header Files\CATHODE</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>Header Files\CATHODE</Filter>
+    </ClInclude>
+    <ClInclude Include="ShortGuid.h">
+      <Filter>Header Files\CATHODE</Filter>
+    </ClInclude>
+    <ClInclude Include="GameFlow.h">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="StringTable.h">
+      <Filter>Header Files\CATHODE</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityInterface.h">
+      <Filter>Header Files\CATHODE</Filter>
+    </ClInclude>
+    <ClInclude Include="DevTools.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FLOAT_MODULATE_RANDOM.h">
+      <Filter>Header Files\CATHODE</Filter>
+    </ClInclude>
+    <ClInclude Include="AI_BEHAVIORAL.h">
+      <Filter>Header Files\Game\AI</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

@@ -1,11 +1,14 @@
 #include "EntityInterface.h"
 
 #include "Menu.h"
+#include "StringTable.h"
+
 #include "Menu_Log.hpp"
 
 #include <map>
 
 using namespace CATHODE;
+using namespace CATHODE::DataTypes;
 
 std::map<ShortGuid, const char*> nodeNameTable;
 //std::map<ShortGuid, bool> permittedEnumGuids;
@@ -17,16 +20,16 @@ bool g_shouldOverrideBehaviourAnim = false;
 Vector g_lightingColourOverride;
 bool g_shouldOverrideLightingColour = false;
 
-bool __fastcall EntityInterface::hFindParameterString(void* _this, void* _EDX, const MemoryPtr& entity_ptr,
+bool __fastcall EntityInterface::hFindParameterString(void* _this, void* /*_EDX*/, const MemoryPtr& entity_ptr,
 	const ShortGuid& shortguid_ptr, String& output_ptr)
 {
 	bool hasAcquiredRightParameter = false;
 
 	const char* parameterName = "";
 
-	if (Menu::IsInitialised() && shortguid_ptr == 0xAE1048A4 /*&& shortguid_ptr == 0xA9D587D4 && Menu::g_override_ShouldRaiseGunWhileTurning*/)
+	if (Menu::IsInitialised() && shortguid_ptr == 0xABB9A4E7 /*&& shortguid_ptr == 0xA9D587D4 && Menu::g_override_ShouldRaiseGunWhileTurning*/)
 	{
-		nodeNameTable.insert(std::make_pair(shortguid_ptr, "data_file"));
+		nodeNameTable.insert(std::make_pair(shortguid_ptr, "text"));
 		parameterName = nodeNameTable.find(shortguid_ptr)->second;
 
 		hasAcquiredRightParameter = true;
@@ -37,7 +40,12 @@ bool __fastcall EntityInterface::hFindParameterString(void* _this, void* _EDX, c
 
 	if (hasAcquiredRightParameter)
 	{
-		logger.AddLog("[EntityInterface] CATHODE - String parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) is set to %s!\n", shortguid_ptr, parameterName, entity_ptr, output_ptr);
+		/*
+		Sample code taken from Ghidra, not intended to be used as-is.
+		charArr = StringTable::string_from_offset(StringTable::m_instance, ca_string_ptr)
+		*/
+		const char* str = StringTable::string_from_offset(StringTable::m_instance, output_ptr);
+		logger.AddLog("[EntityInterface] CATHODE - String parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) is set to %s!\n", shortguid_ptr, parameterName, entity_ptr, str, output_ptr);
 	}
 
 	return ret;
@@ -65,7 +73,7 @@ bool __fastcall EntityInterface::hFindParameterBool(void* _this, void* /*_EDX*/,
 	//g_thisPtr = _this;
 	bool hasAcquiredRightParameter = false;
 
-	if (Menu::IsInitialised() && shortguid_ptr == 0xB3EB5895 || shortguid_ptr == 0xB41E5E17 /*&& shortguid_ptr == 0xA9D587D4 && Menu::g_override_ShouldRaiseGunWhileTurning*/)
+	if (Menu::IsInitialised() /*&& shortguid_ptr == 0xB3EB5895 || shortguid_ptr == 0xB41E5E17 || shortguid_ptr == 0x061A3AC0 && shortguid_ptr == 0xA9D587D4 && Menu::g_override_ShouldRaiseGunWhileTurning*/)
 	{
 		// If an entry for this override does not yet exist, create one.
 		/*if (boolOverrides.find(shortguid_ptr) == boolOverrides.end())
@@ -74,7 +82,7 @@ bool __fastcall EntityInterface::hFindParameterBool(void* _this, void* /*_EDX*/,
 			boolOverrides.insert(std::make_pair(shortguid_ptr, true));
 		}*/
 
-		boolOverrides.insert(std::make_pair(shortguid_ptr, true));
+		//boolOverrides.insert(std::make_pair(shortguid_ptr, true));
 
 		hasAcquiredRightParameter = true;
 		//logger.AddLog("[EntityInterface] Game - Value of Bool parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) requested!\n", shortguid_ptr, parameterName, entity_ptr);
@@ -82,12 +90,11 @@ bool __fastcall EntityInterface::hFindParameterBool(void* _this, void* /*_EDX*/,
 
 	const bool ret = FindParameterBool(_this, entity_ptr, shortguid_ptr, output_ptr);
 	
-	/*shortguid_ptr != 0x4B2D970B &&*/ /*shortguid_ptr == 0x346C9BA8*/ 
 	if (hasAcquiredRightParameter)
 	{
 		//logger.AddLog("[EntityInterface] CATHODE - Bool parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) is set to %d!\n", shortguid_ptr, parameterName, entity_ptr, ret);
 		
-		output_ptr = boolOverrides.find(shortguid_ptr)->second;
+		//output_ptr = boolOverrides.find(shortguid_ptr)->second;
 		
 		//return true;
 	}
@@ -105,7 +112,7 @@ bool __fastcall EntityInterface::hFindParameterVector(void* _this, void* /*_EDX*
 
 	bool hasAcquiredRightParameter = false;
 
-	if (Menu::IsInitialised() && shortguid_ptr == 0x04742219)
+	if (Menu::IsInitialised() /* && shortguid_ptr == 0x04742219*/)
 	{
 		hasAcquiredRightParameter = true;
 		//logger.AddLog("[EntityInterface] Game - Value of Vector parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) requested!\n", shortguid_ptr, parameterName, entity_ptr);
@@ -179,20 +186,17 @@ bool __fastcall EntityInterface::hFindParameterFloat(void* _this, void* /*_EDX*/
 	//g_thisPtr = _this;
 	bool hasAcquiredRightParameter = false;
 
-	if (Menu::IsInitialised() && shortguid_ptr == 0x92013583 /*(shortguid_ptr == 0xFC4AC880 || shortguid_ptr == 0x58DFCBF8 || shortguid_ptr == 0x3D5D0279 || shortguid_ptr == 0x541BB5F7 || shortguid_ptr == 0xF92178D0 || shortguid_ptr == 0x22A6EAB0 || shortguid_ptr == 0x91B1BEF2)*/)
+	if (Menu::IsInitialised() /* && shortguid_ptr == 0x92013583 || (shortguid_ptr == 0xFC4AC880 || shortguid_ptr == 0x58DFCBF8 || shortguid_ptr == 0x3D5D0279 || shortguid_ptr == 0x541BB5F7 || shortguid_ptr == 0xF92178D0 || shortguid_ptr == 0x22A6EAB0 || shortguid_ptr == 0x91B1BEF2)*/)
 	{
 		hasAcquiredRightParameter = true;
-		logger.AddLog("[EntityInterface] Game - Value of Float parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) requested!\n", shortguid_ptr, parameterName, entity_ptr);
+		//logger.AddLog("[EntityInterface] Game - Value of Float parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) requested!\n", shortguid_ptr, parameterName, entity_ptr);
 	}
 
 	const bool ret = FindParameterFloat(_this, entity_ptr, shortguid_ptr, output_ptr);
 	
-	/*shortguid_ptr != 0x4B2D970B &&*/ /*shortguid_ptr == 0x346C9BA8*/ 
 	if (hasAcquiredRightParameter)
 	{
-		logger.AddLog("[EntityInterface] CATHODE - Float parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) is set to %f!\n", shortguid_ptr, parameterName, entity_ptr, output_ptr);
-		
-		output_ptr = 4.0f;
+		//logger.AddLog("[EntityInterface] CATHODE - Float parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) is set to %f!\n", shortguid_ptr, parameterName, entity_ptr, output_ptr);
 		
 		//return true;
 	}
@@ -239,7 +243,7 @@ bool __fastcall EntityInterface::hFindParameterEnum(void* _this, void* /*_EDX*/,
 
 	bool hasAcquiredRightParameter = false;
 
-	if (Menu::IsInitialised() && (/*shortguid_ptr == 0x80451778 ||*/shortguid_ptr == 0x28F2A5AE))
+	if (Menu::IsInitialised() /*&& (shortguid_ptr == 0x80451778 || shortguid_ptr == 0x28F2A5AE)*/)
 	{
 		hasAcquiredRightParameter = true;
 		//logger.AddLog("[EntityInterface] Game - Value of Enum parameter (ShortGuid 0x%X, Name %s) on Entity (MemoryPtr 0x%X) requested!\n", shortguid_ptr, parameterName, entity_ptr);
@@ -279,4 +283,3 @@ bool __fastcall EntityInterface::hFindParameterEnum(void* _this, void* /*_EDX*/,
 
 	return ret;
 }
-

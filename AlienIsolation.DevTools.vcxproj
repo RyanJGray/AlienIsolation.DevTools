@@ -17,7 +17,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -44,7 +44,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)libs/imgui/;$(SolutionDir)libs/detours/src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -53,13 +53,20 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AI_BEHAVIORAL.cpp" />
     <ClCompile Include="CA.cpp" />
+    <ClCompile Include="DevTools.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="GameFlow.cpp" />
+    <ClCompile Include="ShortGuid.cpp" />
     <ClCompile Include="EntityInterface.cpp" />
     <ClCompile Include="FLOAT_MODULATE_RANDOM.cpp" />
+    <ClCompile Include="GAME_LEVEL_MANAGER.cpp" />
+    <ClCompile Include="HackingGame.cpp" />
     <ClCompile Include="libs\detours\src\creatwth.cpp" />
     <ClCompile Include="libs\detours\src\detours.cpp" />
     <ClCompile Include="libs\detours\src\disasm.cpp" />
@@ -78,12 +85,20 @@
     <ClCompile Include="Menu.cpp" />
     <ClCompile Include="Menu_Log.hpp" />
     <ClCompile Include="Scaleform.cpp" />
+    <ClCompile Include="StringTable.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AI_BEHAVIORAL.h" />
     <ClInclude Include="CA.h" />
     <ClInclude Include="CATHODE.h" />
+    <ClInclude Include="DevTools.h" />
+    <ClInclude Include="GameFlow.h" />
+    <ClInclude Include="ShortGuid.h" />
+    <ClInclude Include="Entity.h" />
     <ClInclude Include="EntityInterface.h" />
     <ClInclude Include="FLOAT_MODULATE_RANDOM.h" />
+    <ClInclude Include="GAME_LEVEL_MANAGER.h" />
+    <ClInclude Include="HackingGame.h" />
     <ClInclude Include="libs\detours\src\detours.h" />
     <ClInclude Include="libs\detours\src\detver.h" />
     <ClInclude Include="libs\imgui\backends\imgui_impl_dx11.h" />
@@ -97,6 +112,12 @@
     <ClInclude Include="Logging.h" />
     <ClInclude Include="Menu.h" />
     <ClInclude Include="Scaleform.h" />
+    <ClInclude Include="StringTable.h" />
+    <ClInclude Include="TriggerInfo.h" />
+    <ClInclude Include="UI.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

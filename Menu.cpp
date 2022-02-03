@@ -1,7 +1,13 @@
 #include "Menu.h"
-#include "Scaleform.h"
 #include "Menu_Log.hpp"
 #include "CATHODE.h"
+
+// Game-specific code classes.
+#include "GAME_LEVEL_MANAGER.h"
+#include "AI_BEHAVIORAL.h"
+
+// Engine-specific code classes.
+
 
 #include <detours.h>
 #include <map>
@@ -20,7 +26,7 @@ bool g_showDemoWindow = false;
 bool g_showMenu = false;
 
 const std::string g_modName = "Alien: Isolation DevTools";
-const std::string g_modVersion = "0.1.3 (Alpha)";
+const std::string g_modVersion = "0.1.4 (Alpha)";
 const std::string g_modFullName = g_modName + " " + g_modVersion;
 
 //extern std::map<CATHODE::ShortGuid, bool> permittedEnumGuids;
@@ -28,10 +34,10 @@ const std::string g_modFullName = g_modName + " " + g_modVersion;
 //extern std::map<CATHODE::ShortGuid, std::pair<CATHODE::Enum, std::string>> entityStates;
 //extern std::map<CATHODE::ShortGuid, CATHODE::Enum*> enums;
 extern std::map<int, int*> g_entityBehaviourAnimEnumValues;
-extern std::map<CATHODE::ShortGuid, bool> boolOverrides;
+extern std::map<CATHODE::DataTypes::ShortGuid, bool> boolOverrides;
 extern bool g_shouldOverrideBehaviourAnim;
-extern bool g_Game_levelLoadInProgress;
-extern CATHODE::Vector g_lightingColourOverride;
+extern bool g_GameLevelManager_levelLoadInProgress;
+extern CATHODE::DataTypes::Vector g_lightingColourOverride;
 extern bool g_shouldOverrideLightingColour;
 
 Menu::Menu()
@@ -64,8 +70,7 @@ LRESULT CALLBACK Menu::WndProcHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
         }
     }
 
-    if (g_showMenu) {
-        ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+    if (g_showMenu && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam)) {
         return true;
     }
 
@@ -143,8 +148,6 @@ void Menu::DrawMenu() {
         }
 
         pBackBuffer->Release();
-
-        printf_s("[DevTools] Menu initialised successfully!\n");
     	
         g_menuInitialised = true;
     }
@@ -176,14 +179,14 @@ void Menu::DrawMenu() {
     const float bValue = lightingColour.rgbValue;
 
     // Clear the stored enum value pointers between level loads (avoids null pointer exceptions).
-    if ((g_Game_levelLoadInProgress || alienIsolation_devTools_enum_doClearEnumValueMap) && !alienIsolation_devTools_enum_hasClearedEnumValueMap)
+    if ((g_GameLevelManager_levelLoadInProgress || alienIsolation_devTools_enum_doClearEnumValueMap) && !alienIsolation_devTools_enum_hasClearedEnumValueMap)
     {
         logger.AddLog("[Menu] Cleared behaviour anim enum map!\n");
         g_entityBehaviourAnimEnumValues.clear();
         alienIsolation_devTools_enum_hasClearedEnumValueMap = true;
         alienIsolation_devTools_enum_doClearEnumValueMap = false;
     }
-    else if (!g_Game_levelLoadInProgress && !alienIsolation_devTools_enum_doClearEnumValueMap && alienIsolation_devTools_enum_hasClearedEnumValueMap)
+    else if (!g_GameLevelManager_levelLoadInProgress && !alienIsolation_devTools_enum_doClearEnumValueMap && alienIsolation_devTools_enum_hasClearedEnumValueMap)
     {
         logger.AddLog("[Menu] Reset enum cleared flag!\n");
         alienIsolation_devTools_enum_hasClearedEnumValueMap = false;
@@ -201,7 +204,8 @@ void Menu::DrawMenu() {
         }
     }
 
-	if (alienIsolation_devTools_menu_showEngineLog) {
+	if (alienIsolation_devTools_menu_showEngineLog)
+    {
     	// Show our CATHODE log output window.
 	    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
     	
@@ -249,7 +253,7 @@ void Menu::DrawMenu() {
         }
 
         ImGui::Text("Lighting Behaviour Animation: %s (%d)", behaviourAnim_enumString, alienIsolation_devTools_menu_behaviourAnimTargetValue);
-        ImGui::Text("Level load in progress: %s", g_Game_levelLoadInProgress ? "Yes" : "No");
+        ImGui::Text("Level load in progress: %s", g_GameLevelManager_levelLoadInProgress ? "Yes" : "No");
         ImGui::Text("Has cleared behaviour animation map: %s", alienIsolation_devTools_enum_hasClearedEnumValueMap ? "Yes" : "No");
         ImGui::Text("Lighting RGB Colour Override: R=%.2f, G=%.2f, B=%.2f", rValue, gValue, bValue);
 
@@ -258,10 +262,7 @@ void Menu::DrawMenu() {
 	
     // If the user wants to display the menu, then render it.
     if (g_showMenu) {
-        //g_showDemoWindow = true;
         static bool alienIsolation_devTools_menu_showAboutWindow = false;
-
-        //ImGui::ShowDemoWindow(&g_showDemoWindow);
 
         if (alienIsolation_devTools_menu_showAboutWindow) {
             if (ImGui::Begin((g_modName + " - About").c_str(), &alienIsolation_devTools_menu_showAboutWindow, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
@@ -325,7 +326,16 @@ void Menu::DrawMenu() {
 
             ImGui::Separator();
 
-            ImGui::Text("Level Loading Controls");
+            ImGui::Text("Alien Withdrawl Control");
+
+            if (ImGui::Button("Force Alien withdrawl"))
+            {
+                AI_BEHAVIORAL::WithdrawalManager::request_withdraw(AI_BEHAVIORAL::WithdrawalManager::m_this, 15.0f, 3.0f, -1.0f, false);
+            }
+
+            ImGui::Separator();
+
+            ImGui::Text("Level Loading Control");
 
         	static char levelName[128] = "";
             static std::string levelPrefix = "Production\\";
@@ -336,23 +346,25 @@ void Menu::DrawMenu() {
             if (ImGui::Button("Load to provided level"))
             {
                 levelToLoad = levelPrefix + levelName;
-            	
-                printf_s("[DevTools::Menu] Level load requested to level %s, using loadLevelThisPtr = 0x%p!\n", levelToLoad.c_str(), CATHODE::Scaleform::UI::g_getLevelPointer_thisPtr);
-            	
-                const int ret = CATHODE::Scaleform::UI::GetLevelPointer(CATHODE::Scaleform::UI::g_getLevelPointer_thisPtr, const_cast<char*>(levelToLoad.c_str()));
-                printf_s("[DevTools::Menu] GetLevelPointer ret = %d\n", ret);
 
-            	// When UI::GetLevelPointer returns int 0, it seems this indicates that the engine does not recognise the level provided.
-            	// Callback::GameMenu::LoadLevel has a hard-coded check for UI::GetLevelPointer returning int 0, it will terminate execution early if it detects that this happens.
-                if (ret == 0)
+                const int level = GAME_LEVEL_MANAGER::get_level_from_name(GAME_LEVEL_MANAGER::m_instance, const_cast<char*>(levelToLoad.c_str()));
+
+            	// When GAME_LEVEL_MANAGER::get_level_from_name returns int 0, this indicates that the engine does not recognise the level provided.
+            	// Callback::GameMenu::LoadLevel has a hard-coded check for GAME_LEVEL_MANAGER::get_level_from_name returning int 0, it will terminate execution early if it detects that this happens.
+                if (level == 0)
                 {
                     invalidLevelError = true;
                 }
             	else
             	{
                     invalidLevelError = false;
-                    CATHODE::Scaleform::UI::SetNextLevel(CATHODE::Scaleform::UI::g_getLevelPointer_thisPtr, ret);
-                    CATHODE::Scaleform::UI::LoadLevel(CATHODE::Scaleform::UI::g_getLevelPointer_thisPtr, const_cast<char*>("\0"));
+                    
+                    // Add the level we want to the level queue.
+                    GAME_LEVEL_MANAGER::queue_level(GAME_LEVEL_MANAGER::m_instance, level);
+
+                    // Request that the game loads the next level in the queue.
+                    GAME_LEVEL_MANAGER::request_next_level(GAME_LEVEL_MANAGER::m_instance, false);
+                    
                     // Inform the enum map reset code that the UI wants the map to be cleared.
                     alienIsolation_devTools_enum_doClearEnumValueMap = true;
                 }

@@ -15,7 +15,7 @@ void __fastcall FLOAT_MODULATE_RANDOM::hSaveValues(intptr_t* _this, void* /*_EDX
 	g_entityBehaviourAnimEnumValues.insert(std::make_pair(g_totalEntityBehaviourAnimValues++, reinterpret_cast<int*>(reinterpret_cast<int>(_this) + 0x14)));
 
 	//g_behaviourAnimEnumValue = reinterpret_cast<int*>(reinterpret_cast<int>(_this) + 0x14);
-	logger.AddLog("[SaveValues] behaviourAnimEnumValue=%d\n", behaviourAnimEnumValue);
+	//logger.AddLog("[SaveValues] behaviourAnimEnumValue=%d\n", behaviourAnimEnumValue);
 
 	SaveValues(_this, hasOnThinkParameter, hasResultParameter, behaviourAnimEnumValue, behaviourFrequency, behaviourFrequencyVariance);
 

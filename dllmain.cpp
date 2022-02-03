@@ -1,18 +1,27 @@
+#include "DevTools.h"
+
 #include "CA.h"
 #include "Menu.h"
 #include "Scaleform.h"
 #include "Logging.h"
+
+// Game-specific code classes.
+#include "GAME_LEVEL_MANAGER.h"
+#include "GameFlow.h"
+#include "AI_BEHAVIORAL.h"
+
+// CATHODE-specific code classes.
 #include "EntityInterface.h"
+#include "ShortGuid.h"
+#include "StringTable.h"
 #include "FLOAT_MODULATE_RANDOM.h"
+#include "HackingGame.h"
 
+// External includes.
 #include <detours.h>
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 
-// Appears to get called for every ActionScript function call from the engine to Scaleform.
-// Attempting to even initialise variables inside the hooked function crashes the game with access violations, I tried changing the
-// calling convention but it didn't help, and only made it worse.
-// I'll have to look at this later but for now it is being left alone.
-typedef void(__stdcall* tScaleform_UI_CallASFunction)(int**, char*, char*);
-tScaleform_UI_CallASFunction Scaleform_UI_CallASFunction = reinterpret_cast<tScaleform_UI_CallASFunction>(0x0081b060);
 
 typedef HRESULT(WINAPI* tD3D11CreateDeviceAndSwapChain)(
     void* pAdapter,
@@ -44,8 +53,6 @@ tD3D11Present d3d11Present = nullptr;
 // This will work for now, but I need to write a replacement that will restore the original call bytes, we just overwrite them.
 void hookFunctionCall(int offset, void* replacementFunction)
 {
-    printf_s(("[DevTools] Attaching function call hook at location: " + std::to_string(offset) + "\n").c_str());
-
 	const SIZE_T patchSize = 5;
 	DWORD oldProtect;
 	char* patchLocation = reinterpret_cast<char*>(offset);
@@ -57,7 +64,7 @@ void hookFunctionCall(int offset, void* replacementFunction)
     
 	//32 bit relative call opcode is E8, takes 1 32 bit operand for call offset
     uint8_t instruction[patchSize] = {0xE8, 0x0, 0x0, 0x0, 0x0};
-	const uint32_t relativeAddress = reinterpret_cast<uint32_t>(replacementFunction) - (reinterpret_cast<uint32_t>(patchLocation) + sizeof instruction);
+	const uint32_t relativeAddress = reinterpret_cast<uint32_t>(replacementFunction) - (reinterpret_cast<uint32_t>(patchLocation) + sizeof(instruction));
 
 	// Copy the remaining bytes of the instruction (after the opcode).
 	memcpy_s(instruction + 1, patchSize - 1, &relativeAddress, patchSize - 1);
@@ -67,15 +74,6 @@ void hookFunctionCall(int offset, void* replacementFunction)
 
     // Restore original memory page protections.
 	VirtualProtect(patchLocation, patchSize, oldProtect, &oldProtect);
-}
-
-
-__declspec(noinline)
-void __stdcall hScaleform_UI_CallASFunction(int** thisPtr, char* actionScriptFunction, char* actionScriptParameter)
-{
-    printf_s("[Scaleform::UI::CallASFunction] thisPtr: 0x%p; actionScriptFunction: %s; actionScriptParameter: %s\n", thisPtr, actionScriptFunction, actionScriptParameter);
-
-    Scaleform_UI_CallASFunction(thisPtr, actionScriptFunction, actionScriptParameter);
 }
 
 HRESULT WINAPI hD3D11Present(
@@ -116,16 +114,10 @@ HRESULT WINAPI hD3D11CreateDeviceAndSwapChain(
         pFeatureLevel,
         ppImmediateContext
     );
-
-    printf_s("[DevTools] Executed D3D11CreateDeviceAndSwapChain hook, for the menu!\n");
-
-    printf_s("[DevTools] Menu::IsInitialised returned %d\n", Menu::IsInitialised());
-    printf_s("[DevTools] D3D11CreateDeviceAndSwapChain ppSwapChain = 0x%p\n", *ppSwapChain);
 	
     // If the Menu class hasn't already been initialised, initialise it now.
     if (!Menu::IsInitialised())
     {
-        printf_s("[DevTools] Initialised menu!\n");
         Menu::InitMenu(*ppSwapChain);
 
         if (*ppSwapChain)
@@ -134,23 +126,18 @@ HRESULT WINAPI hD3D11CreateDeviceAndSwapChain(
             DetourUpdateThread(GetCurrentThread());
 
             void** pVMTPresent = *reinterpret_cast<void***>(*ppSwapChain);
-
-            printf_s("[DevTools] pVMTPresent = 0x%p\n", pVMTPresent);
         	
         	// Store reference to the original D3D11Present function from the SwapChain VTable.
             d3d11Present = static_cast<tD3D11Present>(pVMTPresent[8]);
-        	
-            printf_s("[DevTools] d3d11Present = 0x%p\n", d3d11Present);
-            DetourAttach(&reinterpret_cast<PVOID&>(d3d11Present), hD3D11Present);
 
-            const long result = DetourTransactionCommit();
-            printf_s("[DevTools] Installed rendering hooks. (result=%ld)\n", result);
+            DEVTOOLS_DETOURS_ATTACH(d3d11Present, hD3D11Present);
+
+            const auto result = DetourTransactionCommit();
 		}
     }
 	
     return res;
 }
-
 
 BOOL APIENTRY DllMain( HMODULE /*hModule*/,
                        DWORD  ul_reason_for_call,
@@ -165,59 +152,43 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
     if (ul_reason_for_call == DLL_PROCESS_ATTACH)
     {
         DetourRestoreAfterWith();
-    	
-        AllocConsole();
-        FILE* consoleOut;
-		freopen_s(&consoleOut, "CONOUT$", "w", stdout);
-    	
-        printf_s("Detours Architecture: " DETOURS_STRINGIFY(DETOURS_BITS) "\n");
-        fflush(stdout);
-    	
         DetourTransactionBegin();
-        printf_s("[Detours] DetourTransactionBegin()\n");
-        
         DetourUpdateThread(GetCurrentThread());
-        printf_s("[Detours] DetourUpdateThread()\n");
 
     	// Menu hooks / initialisation code, adapted from Alias Isolation.
-        const HMODULE hModule = GetModuleHandleA("d3d11");
+        const HMODULE hModule = GetModuleHandle(L"d3d11");
     	
         if (hModule)
         {
-            printf_s("[DevTools] Got handle to d3d11.dll!\n");
-        	
             d3d11CreateDeviceAndSwapChain = reinterpret_cast<tD3D11CreateDeviceAndSwapChain>(GetProcAddress(hModule, "D3D11CreateDeviceAndSwapChain"));
         	
             if (d3d11CreateDeviceAndSwapChain)
             {
-                printf_s("[DevTools] Got D3D11CreateDeviceAndSwapChain proc address!\n");
-                DetourAttach(&reinterpret_cast<PVOID&>(d3d11CreateDeviceAndSwapChain), hD3D11CreateDeviceAndSwapChain);
+                DEVTOOLS_DETOURS_ATTACH(d3d11CreateDeviceAndSwapChain, hD3D11CreateDeviceAndSwapChain);
             }
             else
             {
-                printf_s("[DevTools] GetProcAddress(\"D3D11CreateDeviceAndSwapChain\") failed!\n");
+                MessageBox(NULL, L"Fatal Error - GetProcAddress(\"D3D11CreateDeviceAndSwapChain\") failed!", L"AlienIsolation.DevTools", MB_ICONERROR);
             }
         }
         else
         {
-            printf_s("[DevTools] GetModuleHandleA(\"d3d11\") failed: MODULE_NOT_FOUND!\n");
+            MessageBox(NULL, L"Fatal Error - GetModuleHandle(\"d3d11\") failed: MODULE_NOT_FOUND!", L"AlienIsolation.DevTools", MB_ICONERROR);
         }
 
         // Overwrite the game data integrity checks (the game verifies all .PKG files and MODELS_LEVEL.BIN files by comparing them against SHA1 hashes).
 		// Here we overwrite the assembly code of the checks in memory with the "NOP" (No Operation) instruction, preventing the game from comparing the hashes.
 
         DWORD oldProtect;
-        int offset = 0x009E8BAF;
+        auto offset = DEVTOOLS_RELATIVE_ADDRESS(0x005e8baf);
         for (int i = 0; i < 25; i++) {
-            printf_s(("Patching location: " + std::to_string(offset + i) + "\n").c_str());
             auto* patchLocation = reinterpret_cast<char*>(offset + i);
             VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
             memcpy_s(patchLocation, 1, "\x90", 1);
             VirtualProtect(patchLocation, 1, oldProtect, &oldProtect);
         }
-        offset = 0x007DBFB0;
+        offset = DEVTOOLS_RELATIVE_ADDRESS(0x003dbfb0);
         for (int i = 0; i < 9; i++) {
-            printf_s(("Patching location: " + std::to_string(offset + i) + "\n").c_str());
             auto* patchLocation = reinterpret_cast<char*>(offset + i);
             VirtualProtect(patchLocation, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
             memcpy_s(patchLocation, 1, "\x90", 1);
@@ -230,11 +201,12 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
 
     	// Method taken from http://kylehalladay.com/blog/2020/11/13/Hooking-By-Example.html, thanks!
     	// Havok error logs.
-    	hookFunctionCall(0x007F8EB9, CATHODE::Logging::HavokLogger::hijackedPrint);
+    	/*
+        hookFunctionCall(DEVTOOLS_RELATIVE_ADDRESS(0x003f8eb9), CATHODE::Logging::HavokLogger::hijackedPrint);
     	// MusicController - MusicEvent
-       	hookFunctionCall(0x006B95AA, CATHODE::Logging::MusicControllerLogger::hijackedPrint_MusicEvent);
+       	hookFunctionCall(DEVTOOLS_RELATIVE_ADDRESS(0x002b95aa), CATHODE::Logging::MusicControllerLogger::hijackedPrint_MusicEvent);
     	// AnimationCommandLogger - Command changes
-        hookFunctionCall(0x00678E57, CATHODE::Logging::AnimationCommandLogger::hijackedPrint);
+        hookFunctionCall(DEVTOOLS_RELATIVE_ADDRESS(0x00278e57), CATHODE::Logging::AnimationCommandLogger::hijackedPrint);
     	// AnimationDataLogger logs.
     	// "Attempt to load bad animation data - set: %s - label: %s\n"
     	const int hookAddresses[7] = {
@@ -293,68 +265,75 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
     	hookFunctionCall(0x004AD774, CATHODE::Logging::SpeechLogger::hijackedPrint_SpeechEntity);
         // "SPEECH: No valid entity connected to speech entity attempting to play %s.  I needa valid character or sound object - see Jack if you don\'t understand.\n"
     	hookFunctionCall(0x004E026F, CATHODE::Logging::SpeechLogger::hijackedPrint_SpeechEntity);
-    	
+        */
+
+        // Attach the GAME_LEVEL_MANAGER hooks.
+        DEVTOOLS_DETOURS_ATTACH(GAME_LEVEL_MANAGER::get_level_from_name, GAME_LEVEL_MANAGER::h_get_level_from_name);
+        DEVTOOLS_DETOURS_ATTACH(GAME_LEVEL_MANAGER::queue_level, GAME_LEVEL_MANAGER::h_queue_level);
+        DEVTOOLS_DETOURS_ATTACH(GAME_LEVEL_MANAGER::request_next_level, GAME_LEVEL_MANAGER::h_request_next_level);
+
+        // Attach the GameFlow hooks.
+        DEVTOOLS_DETOURS_ATTACH(GameFlow::start_gameplay, GameFlow::h_start_gameplay);
+
+        // Attach the AI_BEHAVIORAL hooks.
+        DEVTOOLS_DETOURS_ATTACH(AI_BEHAVIORAL::WithdrawalManager::request_withdraw, AI_BEHAVIORAL::WithdrawalManager::h_request_withdraw);
+        DEVTOOLS_DETOURS_ATTACH(AI_BEHAVIORAL::WithdrawalManager::set_withdraw_state, AI_BEHAVIORAL::WithdrawalManager::h_set_withdraw_state);
+
+        // Attach the HackingGame hooks (testing only).
+        DEVTOOLS_DETOURS_ATTACH(CATHODE::HackingGame::on_custom_method, CATHODE::HackingGame::h_on_custom_method);
+
     	// Attach the Scaleform hooks.
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::Callback::GameMenu::LoadLevel), CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::GetLevelPointer), CATHODE::Scaleform::UI::hGetLevelPointer);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc1), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc1);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc2), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc2);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::SetNextLevel), CATHODE::Scaleform::UI::hSetNextLevel);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevel), CATHODE::Scaleform::UI::hLoadLevel);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler), CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
-        //DetourAttach(&reinterpret_cast<PVOID&>(Scaleform_UI_CallASFunction), hScaleform_UI_CallASFunction);
+        //DEVTOOLS_DETOURS_ATTACH(CATHODE::Scaleform::Callback::GameMenu::LoadLevel, CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
+        //DEVTOOLS_DETOURS_ATTACH(CATHODE::Scaleform::UI::LoadLevelUnknownFunc1, CATHODE::Scaleform::UI::hLoadLevelUnknownFunc1);
+        //DEVTOOLS_DETOURS_ATTACH(CATHODE::Scaleform::UI::LoadLevelUnknownFunc2, CATHODE::Scaleform::UI::hLoadLevelUnknownFunc2);
+        //DEVTOOLS_DETOURS_ATTACH(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler, CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
 
         // Attach the CA hooks.
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::verify_integrity), CATHODE::CA::FILE_HASHES::h_verify_integrity);
-        //DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::terminate_game), CATHODE::CA::FILE_HASHES::h_terminate_game);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::sha1_portable_hash), CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::CA::LOAD_LEVEL::StartGameplayOnLevel), CATHODE::CA::LOAD_LEVEL::hStartGameplayOnLevel);
+        DEVTOOLS_DETOURS_ATTACH(CATHODE::CA::FILE_HASHES::verify_integrity, CATHODE::CA::FILE_HASHES::h_verify_integrity);
+        //DEVTOOLS_DETOURS_ATTACH(CATHODE::CA::FILE_HASHES::terminate_game, CATHODE::CA::FILE_HASHES::h_terminate_game);
+        DEVTOOLS_DETOURS_ATTACH(CATHODE::CA::FILE_HASHES::sha1_portable_hash, CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
 
         // Attach the EntityInterface hooks.
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterString), CATHODE::EntityInterface::hFindParameterString);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterBool), CATHODE::EntityInterface::hFindParameterBool);
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterVector), CATHODE::EntityInterface::hFindParameterVector);
-    	DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterFloat), CATHODE::EntityInterface::hFindParameterFloat);
-    	DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterEnum), CATHODE::EntityInterface::hFindParameterEnum);
+        DEVTOOLS_DETOURS_ATTACH(CATHODE::EntityInterface::FindParameterString, CATHODE::EntityInterface::hFindParameterString);
+        DEVTOOLS_DETOURS_ATTACH(CATHODE::EntityInterface::FindParameterBool, CATHODE::EntityInterface::hFindParameterBool);
+        DEVTOOLS_DETOURS_ATTACH(CATHODE::EntityInterface::FindParameterVector, CATHODE::EntityInterface::hFindParameterVector);
+    	DEVTOOLS_DETOURS_ATTACH(CATHODE::EntityInterface::FindParameterFloat, CATHODE::EntityInterface::hFindParameterFloat);
+    	DEVTOOLS_DETOURS_ATTACH(CATHODE::EntityInterface::FindParameterEnum, CATHODE::EntityInterface::hFindParameterEnum);
 
         // Attach the FLOAT_MODULATE_RANDOM hooks.
-    	DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::FLOAT_MODULATE_RANDOM::SaveValues), CATHODE::FLOAT_MODULATE_RANDOM::hSaveValues);
+        DEVTOOLS_DETOURS_ATTACH(CATHODE::FLOAT_MODULATE_RANDOM::SaveValues, CATHODE::FLOAT_MODULATE_RANDOM::hSaveValues);
+
+        // Attach the ShortGuid hooks.
+        DEVTOOLS_DETOURS_ATTACH(CATHODE::ShortGuid::ShortGuid, CATHODE::ShortGuid::hShortGuid);
+
+        // Attach the StringTable hooks.
+        DEVTOOLS_DETOURS_ATTACH(CATHODE::StringTable::string_from_offset, CATHODE::StringTable::h_string_from_offset);
 
         const long result = DetourTransactionCommit();
-        printf_s("[DevTools] Installed hooks. (result=%ld)\n", result);
 
         if (result != NO_ERROR)
         {
             switch (result)
             {
             case ERROR_INVALID_BLOCK:
-                printf_s("[Detours] The function referenced is too small to be detoured (%ld)\n", result);
+                MessageBox(NULL, L"Fatal Error - The function referenced is too small to be detoured", L"AlienIsolation.DevTools", MB_ICONERROR);
                 break;
             case ERROR_INVALID_HANDLE:
-                printf_s("[Detours] The ppPointer parameter is null or points to a null pointer (%ld)\n", result);
+                MessageBox(NULL, L"Fatal Error - The ppPointer parameter is null or points to a null pointer", L"AlienIsolation.DevTools", MB_ICONERROR);
                 break;
             case ERROR_INVALID_OPERATION:
-                printf_s("[Detours] No pending transaction exists (%ld)\n", result);
+                MessageBox(NULL, L"Fatal Error - No pending transaction exists", L"AlienIsolation.DevTools", MB_ICONERROR);
                 break;
             case ERROR_NOT_ENOUGH_MEMORY:
-                printf_s("[Detours] Not enough memory exists to complete the operation (%ld)\n", result);
+                MessageBox(NULL, L"Fatal Error - Not enough memory exists to complete the operation", L"AlienIsolation.DevTools", MB_ICONERROR);
                 break;
             case ERROR_INVALID_PARAMETER:
-                printf_s("[Detours] An invalid parameter has been passed (%ld)\n", result);
+                MessageBox(NULL, L"Fatal Error - An invalid parameter has been passed", L"AlienIsolation.DevTools", MB_ICONERROR);
                 break;
             default:
-                printf_s("[Detours] Unknown error (%ld)\n", result);
+                MessageBox(NULL, L"Fatal Error - Unknown Detours error", L"AlienIsolation.DevTools", MB_ICONERROR);
                 break;
             }
-        }
-
-        if (result == NO_ERROR)
-        {
-            printf_s("[DevTools] Hooks active!\n\n");
-        }
-        else
-        {
-            printf_s("[DevTools] Hooks failed!\n");
         }
     }
     else if (ul_reason_for_call == DLL_PROCESS_DETACH)
@@ -363,41 +342,53 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
         DetourUpdateThread(GetCurrentThread());
 
     	// Detach the rendering hooks.
-        DetourDetach(&reinterpret_cast<PVOID&>(d3d11CreateDeviceAndSwapChain), hD3D11CreateDeviceAndSwapChain);
-        DetourDetach(&reinterpret_cast<PVOID&>(d3d11Present), hD3D11Present);
+        DEVTOOLS_DETOURS_DETACH(d3d11CreateDeviceAndSwapChain, hD3D11CreateDeviceAndSwapChain);
+        DEVTOOLS_DETOURS_DETACH(d3d11Present, hD3D11Present);
+
+        // Detach the GAME_LEVEL_MANAGER hooks.
+        DEVTOOLS_DETOURS_DETACH(GAME_LEVEL_MANAGER::get_level_from_name, GAME_LEVEL_MANAGER::h_get_level_from_name);
+        DEVTOOLS_DETOURS_DETACH(GAME_LEVEL_MANAGER::queue_level, GAME_LEVEL_MANAGER::h_queue_level);
+        DEVTOOLS_DETOURS_DETACH(GAME_LEVEL_MANAGER::request_next_level, GAME_LEVEL_MANAGER::h_request_next_level);
+
+        // Detach the GameFlow hooks.
+        DEVTOOLS_DETOURS_DETACH(GameFlow::start_gameplay, GameFlow::h_start_gameplay);
+        
+        // Detach the AI_BEHAVIORAL hooks.
+        DEVTOOLS_DETOURS_DETACH(AI_BEHAVIORAL::WithdrawalManager::request_withdraw, AI_BEHAVIORAL::WithdrawalManager::h_request_withdraw);
+        DEVTOOLS_DETOURS_DETACH(AI_BEHAVIORAL::WithdrawalManager::set_withdraw_state, AI_BEHAVIORAL::WithdrawalManager::h_set_withdraw_state);
+
+        // Detach the HackingGame hooks (testing only).
+        DEVTOOLS_DETOURS_DETACH(CATHODE::HackingGame::on_custom_method, CATHODE::HackingGame::h_on_custom_method);
 
     	// Detach the Scaleform hooks.
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::Callback::GameMenu::LoadLevel), CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::GetLevelPointer), CATHODE::Scaleform::UI::hGetLevelPointer);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc1), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc1);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevelUnknownFunc2), CATHODE::Scaleform::UI::hLoadLevelUnknownFunc2);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::SetNextLevel), CATHODE::Scaleform::UI::hSetNextLevel);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::LoadLevel), CATHODE::Scaleform::UI::hLoadLevel);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler), CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
-        //DetourDetach(&reinterpret_cast<PVOID&>(Scaleform_UI_CallASFunction), hScaleform_UI_CallASFunction);
+        //DEVTOOLS_DETOURS_DETACH(CATHODE::Scaleform::Callback::GameMenu::LoadLevel, CATHODE::Scaleform::Callback::GameMenu::hLoadLevel);
+        //DEVTOOLS_DETOURS_DETACH(CATHODE::Scaleform::UI::LoadLevelUnknownFunc1, CATHODE::Scaleform::UI::hLoadLevelUnknownFunc1);
+        //DEVTOOLS_DETOURS_DETACH(CATHODE::Scaleform::UI::LoadLevelUnknownFunc2, CATHODE::Scaleform::UI::hLoadLevelUnknownFunc2);
+        //DEVTOOLS_DETOURS_DETACH(CATHODE::Scaleform::UI::DispatchRequestToNodeHandler, CATHODE::Scaleform::UI::hDispatchRequestToNodeHandler);
 
         // Detach the CA hooks.
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::verify_integrity), CATHODE::CA::FILE_HASHES::h_verify_integrity);
-        //DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::terminate_game), CATHODE::CA::FILE_HASHES::h_terminate_game);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::FILE_HASHES::sha1_portable_hash), CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::CA::LOAD_LEVEL::StartGameplayOnLevel), CATHODE::CA::LOAD_LEVEL::hStartGameplayOnLevel);
+        DEVTOOLS_DETOURS_DETACH(CATHODE::CA::FILE_HASHES::verify_integrity, CATHODE::CA::FILE_HASHES::h_verify_integrity);
+        //DEVTOOLS_DETOURS_DETACH(CATHODE::CA::FILE_HASHES::terminate_game, CATHODE::CA::FILE_HASHES::h_terminate_game);
+        DEVTOOLS_DETOURS_DETACH(CATHODE::CA::FILE_HASHES::sha1_portable_hash, CATHODE::CA::FILE_HASHES::h_sha1_portable_hash);
 
         // Detach the EntityInterface hooks.
-        DetourAttach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterString), CATHODE::EntityInterface::hFindParameterString);
-    	DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterBool), CATHODE::EntityInterface::hFindParameterBool);
-        DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterVector), CATHODE::EntityInterface::hFindParameterVector);
-    	DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterFloat), CATHODE::EntityInterface::hFindParameterFloat);
-    	DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::EntityInterface::FindParameterEnum), CATHODE::EntityInterface::hFindParameterEnum);
+        DEVTOOLS_DETOURS_DETACH(CATHODE::EntityInterface::FindParameterString, CATHODE::EntityInterface::hFindParameterString);
+        DEVTOOLS_DETOURS_DETACH(CATHODE::EntityInterface::FindParameterBool, CATHODE::EntityInterface::hFindParameterBool);
+        DEVTOOLS_DETOURS_DETACH(CATHODE::EntityInterface::FindParameterVector, CATHODE::EntityInterface::hFindParameterVector);
+        DEVTOOLS_DETOURS_DETACH(CATHODE::EntityInterface::FindParameterFloat, CATHODE::EntityInterface::hFindParameterFloat);
+        DEVTOOLS_DETOURS_DETACH(CATHODE::EntityInterface::FindParameterEnum, CATHODE::EntityInterface::hFindParameterEnum);
 
     	// Attach the FLOAT_MODULATE_RANDOM hooks.
-    	DetourDetach(&reinterpret_cast<PVOID&>(CATHODE::FLOAT_MODULATE_RANDOM::SaveValues), CATHODE::FLOAT_MODULATE_RANDOM::hSaveValues);
+        DEVTOOLS_DETOURS_DETACH(CATHODE::FLOAT_MODULATE_RANDOM::SaveValues, CATHODE::FLOAT_MODULATE_RANDOM::hSaveValues);
+       
+        // Detach the ShortGuid hooks.
+        DEVTOOLS_DETOURS_DETACH(CATHODE::ShortGuid::ShortGuid, CATHODE::ShortGuid::hShortGuid);
+        
+        // Attach the StringTable hooks.
+        DEVTOOLS_DETOURS_DETACH(CATHODE::StringTable::string_from_offset, CATHODE::StringTable::h_string_from_offset);
 
-        const long ret = DetourTransactionCommit();
-
-        printf_s("[DevTools] Removed hooks. (result=%ld)\n", ret);
-        fflush(stdout);
+        DetourTransactionCommit();
     }
 	
     return TRUE;
 }
-
