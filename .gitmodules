@@ -4,3 +4,7 @@
 [submodule "libs/detours"]
 	path = libs/detours
 	url = https://github.com/microsoft/Detours
+[submodule "libs/AlienIsolation.SDK"]
+	path = libs/AlienIsolation.SDK
+	url = https://github.com/RyanJGray/AlienIsolation.SDK.git
+	branch = feature/func-addressing
