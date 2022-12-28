@@ -371,8 +371,10 @@ void Menu::DrawMenu() {
                 }
             }
 
-            if (ImGui::Button("Jump to AUTORUN_CHECKPOINT"))
-                EntityManager::jump_to_checkpoint("AUTORUN_CHECKPOINT");
+            ImGui::Separator();
+
+            if (ImGui::Button("Jump to Entry"))
+                EntityManager::jump_to_checkpoint(EntityManager::m_this, "Entry");
 
         	if (invalidLevelError)
         	{
