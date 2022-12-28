@@ -61,6 +61,7 @@
     <ClCompile Include="CA.cpp" />
     <ClCompile Include="DevTools.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="EntityManager.cpp" />
     <ClCompile Include="GameFlow.cpp" />
     <ClCompile Include="ShortGuid.cpp" />
     <ClCompile Include="EntityInterface.cpp" />
@@ -92,6 +93,7 @@
     <ClInclude Include="CA.h" />
     <ClInclude Include="CATHODE.h" />
     <ClInclude Include="DevTools.h" />
+    <ClInclude Include="EntityManager.h" />
     <ClInclude Include="GameFlow.h" />
     <ClInclude Include="ShortGuid.h" />
     <ClInclude Include="Entity.h" />

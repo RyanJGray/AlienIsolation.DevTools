@@ -9,6 +9,7 @@
 #include "GAME_LEVEL_MANAGER.h"
 #include "GameFlow.h"
 #include "AI_BEHAVIORAL.h"
+#include "EntityManager.h"
 
 // CATHODE-specific code classes.
 #include "EntityInterface.h"
@@ -176,8 +177,8 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
             MessageBox(NULL, L"Fatal Error - GetModuleHandle(\"d3d11\") failed: MODULE_NOT_FOUND!", L"AlienIsolation.DevTools", MB_ICONERROR);
         }
 
-        // Overwrite the game data integrity checks (the game verifies all .PKG files and MODELS_LEVEL.BIN files by comparing them against SHA1 hashes).
-		// Here we overwrite the assembly code of the checks in memory with the "NOP" (No Operation) instruction, preventing the game from comparing the hashes.
+        // Attach the EntityManager hooks.
+        DEVTOOLS_DETOURS_ATTACH(EntityManager::jump_to_checkpoint, EntityManager::h_jump_to_checkpoint);
 
         DWORD oldProtect;
         auto offset = DEVTOOLS_RELATIVE_ADDRESS(0x005e8baf);
@@ -344,6 +345,9 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
     	// Detach the rendering hooks.
         DEVTOOLS_DETOURS_DETACH(d3d11CreateDeviceAndSwapChain, hD3D11CreateDeviceAndSwapChain);
         DEVTOOLS_DETOURS_DETACH(d3d11Present, hD3D11Present);
+
+        // Detach the EntityManager hooks.
+        DEVTOOLS_DETOURS_DETACH(EntityManager::jump_to_checkpoint, EntityManager::h_jump_to_checkpoint);
 
         // Detach the GAME_LEVEL_MANAGER hooks.
         DEVTOOLS_DETOURS_DETACH(GAME_LEVEL_MANAGER::get_level_from_name, GAME_LEVEL_MANAGER::h_get_level_from_name);
