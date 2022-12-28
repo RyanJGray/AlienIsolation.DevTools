@@ -5,6 +5,7 @@
 // Game-specific code classes.
 #include "GAME_LEVEL_MANAGER.h"
 #include "AI_BEHAVIORAL.h"
+#include "EntityManager.h"
 
 // Engine-specific code classes.
 
@@ -369,6 +370,9 @@ void Menu::DrawMenu() {
                     alienIsolation_devTools_enum_doClearEnumValueMap = true;
                 }
             }
+
+            if (ImGui::Button("Jump to AUTORUN_CHECKPOINT"))
+                EntityManager::jump_to_checkpoint("AUTORUN_CHECKPOINT");
 
         	if (invalidLevelError)
         	{
