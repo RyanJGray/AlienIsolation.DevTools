@@ -4,3 +4,6 @@
 [submodule "libs/detours"]
 	path = libs/detours
 	url = https://github.com/microsoft/Detours
+[submodule "libs/websocketpp"]
+	path = libs/websocketpp
+	url = https://github.com/zaphoyd/websocketpp
