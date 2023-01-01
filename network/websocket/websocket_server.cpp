@@ -39,6 +39,7 @@ WebSocketServer::WebSocketServer()
 
 WebSocketServer::~WebSocketServer()
 {
+    s->stop_listening();
     delete this->server;
 }
 
