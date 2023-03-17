@@ -1,0 +1,12 @@
+{
+  "name": "alienisolation-devtools",
+  "version-semver": "0.1.4",
+  "dependencies": [ "uwebsockets", "nlohmann-json" ],
+  "overrides": [
+    {
+      "name": "uwebsockets",
+      "version": "20.31.0"
+    }
+  ],
+  "builtin-baseline": "12c2a93b4007612b5ffa980c9d2235eb0bcac10f"
+}

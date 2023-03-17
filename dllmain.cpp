@@ -1,4 +1,5 @@
 #include "DevTools.h"
+#include "network/websocket/websocket_server.h"
 
 #include "CA.h"
 #include "Menu.h"
@@ -335,6 +336,8 @@ BOOL APIENTRY DllMain( HMODULE /*hModule*/,
                 break;
             }
         }
+
+        auto* _g_WebSocketServer = new WebSocketServer;
     }
     else if (ul_reason_for_call == DLL_PROCESS_DETACH)
     {

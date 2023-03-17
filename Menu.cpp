@@ -466,13 +466,13 @@ void Menu::DrawMenu() {
                 g_lightingColourOverride.v3 = lightingColour.rgbVector;
             }
 
-            static bool& override_LightReference_IncludeInPlanarReflections = boolOverrides.find(0xB3EB5895)->second;
+            //static bool& override_LightReference_IncludeInPlanarReflections = boolOverrides.find(0xB3EB5895)->second;
 
-            ImGui::Checkbox("Override LightReference::include_in_planar_reflections?", &override_LightReference_IncludeInPlanarReflections);
+            //ImGui::Checkbox("Override LightReference::include_in_planar_reflections?", &override_LightReference_IncludeInPlanarReflections);
 
-            static bool& override_LightReference_Volume = boolOverrides.find(0xB41E5E17)->second;
+            //static bool& override_LightReference_Volume = boolOverrides.find(0xB41E5E17)->second;
 
-            ImGui::Checkbox("Override LightReference::volume?", &override_LightReference_Volume);
+            //ImGui::Checkbox("Override LightReference::volume?", &override_LightReference_Volume);
 
             ImGui::End();
         }

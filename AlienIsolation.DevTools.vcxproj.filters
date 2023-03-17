@@ -49,6 +49,18 @@
     <Filter Include="Header Files\Game\AI">
       <UniqueIdentifier>{d70c90a5-0797-49eb-94cf-6b6dbf7af147}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Network">
+      <UniqueIdentifier>{a9d98d96-1ccb-40b2-9d6d-0f7f7149cbdc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Network\Websocket">
+      <UniqueIdentifier>{5dd774d2-bfa6-4888-8f0a-e7f52ef7ef2e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Network">
+      <UniqueIdentifier>{34f2c6db-38dd-44a3-a4ff-48330d54eaa1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Network\Websocket">
+      <UniqueIdentifier>{158589cb-209e-45bf-b121-5bd9f9ec5596}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -138,6 +150,9 @@
     <ClCompile Include="AI_BEHAVIORAL.cpp">
       <Filter>Source Files\Game\AI</Filter>
     </ClCompile>
+    <ClCompile Include="network\websocket\websocket_server.cpp">
+      <Filter>Source Files\Network\Websocket</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scaleform.h">
@@ -221,8 +236,12 @@
     <ClInclude Include="AI_BEHAVIORAL.h">
       <Filter>Header Files\Game\AI</Filter>
     </ClInclude>
+    <ClInclude Include="network\websocket\websocket_server.h">
+      <Filter>Header Files\Network\Websocket</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+    <None Include="vcpkg.json" />
   </ItemGroup>
 </Project>
